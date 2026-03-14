@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <!-- 六边形外轮底色 -->
+  <polygon points="24,2 42,13 42,35 24,46 6,35 6,13" fill="#0a1520" stroke="#4ade80" stroke-width="2"/>
+  <!-- 内层六边形 -->
+  <polygon points="24,8 37,15.5 37,32.5 24,40 11,32.5 11,15.5" fill="#0d1f10"/>
+  <!-- 中央土地图标 -->
+  <text x="24" y="30" font-size="18" text-anchor="middle" fill="#4ade80" font-family="monospace" font-weight="bold">⬡</text>
+  <!-- 小点装饰 -->
+  <circle cx="24" cy="22" r="3" fill="#4ade80" opacity="0.8"/>
+</svg>

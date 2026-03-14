@@ -1,0 +1,140 @@
+.market-page {
+  display: flex;
+  gap: 20px;
+  height: calc(100vh - 52px);
+  overflow: hidden;
+}
+
+/* Sidebar */
+.market-sidebar {
+  width: 200px;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 20px 16px;
+  overflow-y: auto;
+}
+.market-sidebar h3 {
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 14px;
+}
+.filter-group { margin-bottom: 20px; }
+.filter-group label {
+  display: block;
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.filter-btn {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 6px 10px;
+  margin-bottom: 4px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background .12s, color .12s;
+}
+.filter-btn:hover { background: var(--surface2); color: var(--text); }
+.filter-btn.active { background: var(--primary); color: #fff; }
+
+.contract-info {
+  font-size: 11px;
+  color: var(--text-dim);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.contract-info a { font-size: 11px; }
+
+/* Main */
+.market-main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
+.market-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.market-header h2 { font-size: 20px; font-weight: 700; }
+.auction-count {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+/* Land Grid */
+.land-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.land-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: transform .15s, border-color .15s;
+}
+.land-card:hover { transform: translateY(-2px); border-color: var(--primary); }
+
+.land-card-map {
+  background: #0d1520;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 120px;
+}
+.iso-svg { width: 120px; height: 80px; }
+
+.land-card-info { padding: 12px 14px; }
+.land-card-id {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.elem-badge {
+  font-size: 11px;
+  background: var(--surface2);
+  padding: 2px 7px;
+  border-radius: 20px;
+  color: var(--text-dim);
+}
+.land-card-price { margin-bottom: 4px; }
+.price-now { font-size: 16px; font-weight: 700; color: var(--gold); margin-right: 8px; }
+.price-range { font-size: 11px; color: var(--text-dim); }
+.land-card-time { font-size: 11px; color: var(--text-dim); margin-bottom: 10px; }
+
+.buy-btn {
+  width: 100%;
+  padding: 8px;
+  border-radius: 6px;
+  border: none;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  transition: filter .15s;
+}
+.buy-btn:hover:not(:disabled) { filter: brightness(1.2); }
+.buy-btn:disabled { opacity: .5; cursor: not-allowed; }

@@ -1,0 +1,120 @@
+.referral-page {
+  max-width: 700px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.ref-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px 24px;
+}
+.ref-section h2 { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+.ref-section h3 { font-size: 15px; font-weight: 600; margin-bottom: 14px; color: var(--text-dim); }
+
+.ref-desc { color: var(--text-dim); font-size: 13px; margin-bottom: 14px; }
+
+.ref-link-box { display: flex; gap: 8px; }
+.ref-link-input {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: var(--text-dim);
+  font-size: 12px;
+  outline: none;
+}
+.copy-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.bind-row { display: flex; gap: 8px; }
+.ref-input {
+  flex: 1;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+  transition: border-color .15s;
+}
+.ref-input:focus { border-color: var(--primary); }
+.bind-btn {
+  padding: 8px 18px;
+  border-radius: 6px;
+  border: none;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+.bind-ok { color: var(--wood); margin-top: 10px; font-size: 13px; }
+
+.bound-info code {
+  font-size: 12px;
+  background: var(--surface2);
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: var(--primary-h);
+}
+
+/* Level rates */
+.level-rates { display: flex; gap: 10px; flex-wrap: wrap; }
+.level-rate-card {
+  flex: 1;
+  min-width: 80px;
+  background: var(--surface2);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border-left: 3px solid transparent;
+}
+.level-num { font-size: 11px; color: var(--text-dim); text-transform: uppercase; }
+.level-rate { font-size: 18px; font-weight: 700; }
+
+/* Ancestor chain */
+.ancestor-chain { display: flex; flex-direction: column; gap: 8px; }
+.ancestor-item { display: flex; align-items: center; gap: 10px; }
+.ancestor-level { font-size: 12px; font-weight: 700; width: 24px; }
+.ancestor-addr { font-size: 12px; color: var(--primary-h); }
+
+/* Earnings */
+.earnings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+}
+.earning-card {
+  background: var(--surface2);
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.earning-icon { font-size: 22px; }
+.earning-sym { font-size: 12px; color: var(--text-dim); font-weight: 600; }
+.earning-val { font-size: 15px; font-weight: 700; color: var(--gold); }
+
+.connect-prompt {
+  text-align: center;
+  padding: 60px;
+  color: var(--text-dim);
+  font-size: 15px;
+}

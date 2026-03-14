@@ -1,0 +1,367 @@
+.world-map-page {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: calc(100vh - 90px);
+  height: calc(100dvh - 90px);
+  padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+  box-sizing: border-box;
+}
+
+.map-subnav {
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  height: 36px;
+  background: rgba(8,12,24,0.98);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+  gap: 4px;
+}
+.map-subnav-item {
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  height: 100%;
+  background: none;
+  border: none;
+  font-size: 12px;
+  font-weight: 500;
+  color: #475569;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all 0.15s;
+}
+.map-subnav-item:hover { color: #94a3b8; }
+.map-subnav-item.active { color: #4ade80; border-bottom-color: #4ade80; }
+
+.map-topbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.map-title { font-size: 15px; font-weight: 700; }
+.map-stat  { font-size: 13px; color: var(--text-dim); }
+.map-stat b { color: var(--gold); }
+.map-regions { font-size: 12px; color: var(--text-dim); }
+.map-hint  { font-size: 12px; color: #f59e0b; background: rgba(245,158,11,.1); padding: 3px 10px; border-radius: 4px; }
+
+.map-content {
+  display: flex;
+  flex: 1;
+  gap: 0;
+  min-height: 0;
+}
+.map-content:has(.map-detail) .map-wrap { border-radius: 10px 0 0 10px; }
+
+.map-wrap {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  background: #060d18;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  min-width: 0;
+}
+
+.map-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+  font-size: 14px;
+  background: rgba(6,13,24,.75);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.map-canvas {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: pixelated;
+  display: block;
+}
+
+.map-zoom-controls {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 5;
+}
+.map-zoom-btn {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+.map-zoom-btn:hover {
+  background: var(--surface2);
+  color: var(--primary-h);
+}
+.map-zoom-btn:active {
+  transform: scale(0.96);
+}
+
+.map-bottom {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.map-legend {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  flex: 1;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.legend-item span {
+  width: 11px;
+  height: 11px;
+  border-radius: 2px;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* 右侧地块信息面板（参考 Evolution Land） */
+.map-detail {
+  width: 280px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, #0f1729 0%, #1e293b 100%);
+  border: 1px solid var(--border);
+  border-left: none;
+  border-radius: 0 10px 10px 0;
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.map-detail-back {
+  display: block;
+  width: 100%;
+  padding: 6px 0;
+  margin-bottom: 8px;
+  background: none;
+  border: none;
+  font-size: 12px;
+  color: var(--primary-h);
+  cursor: pointer;
+  text-align: left;
+}
+.map-detail-back:hover { text-decoration: underline; }
+.map-detail-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.map-detail-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+}
+.map-detail-section {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.map-detail-section:last-of-type { border-bottom: none; }
+.map-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+.map-detail-row:last-child { margin-bottom: 0; }
+.detail-label { color: var(--text-dim); flex-shrink: 0; }
+.detail-address a { color: var(--primary-h); word-break: break-all; font-size: 11px; }
+.detail-empty { color: var(--text-dim); font-style: italic; }
+.map-detail-elements {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.map-detail-elem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.elem-icon { font-size: 18px; }
+.elem-name { color: var(--text-dim); min-width: 52px; }
+.elem-val { font-weight: 600; color: var(--text); }
+.map-detail-auction {
+  font-size: 13px;
+  color: var(--gold);
+  padding: 6px 0;
+}
+.map-detail-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.detail-slot {
+  width: 44px;
+  height: 44px;
+  background: var(--surface2);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+  font-size: 18px;
+}
+.detail-slot-add { border-style: solid; color: var(--primary-h); cursor: pointer; }
+.detail-slot-add:hover { background: var(--surface); color: var(--primary); }
+
+.map-detail-backdrop { display: none; }
+
+/* 移动端地图页 */
+@media (max-width: 768px) {
+  .world-map-page {
+    height: 100%;
+    min-height: 0;
+    gap: 8px;
+    padding: 8px;
+    padding-left: max(8px, env(safe-area-inset-left));
+    padding-right: max(8px, env(safe-area-inset-right));
+  }
+  .map-subnav {
+    height: 40px;
+    padding: 0 12px;
+    flex-shrink: 0;
+  }
+  .map-subnav-item {
+    padding: 0 16px;
+    font-size: 13px;
+    min-height: 44px;
+  }
+  .map-topbar {
+    padding: 10px 12px;
+    gap: 8px 12px;
+    flex-shrink: 0;
+  }
+  .map-title { font-size: 15px; }
+  .map-stat, .map-hint, .map-regions { font-size: 12px; }
+  .map-content {
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+  }
+  .map-content:has(.map-detail) .map-wrap { border-radius: 12px 12px 0 0; }
+  .map-wrap {
+    border-radius: 12px;
+    flex: 1;
+    min-height: 200px;
+  }
+  .map-detail-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 240;
+    cursor: pointer;
+  }
+  .map-detail {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-height: 58vh;
+    border-radius: 16px 16px 0 0;
+    border: 1px solid var(--border);
+    border-bottom: none;
+    padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.4);
+    z-index: 250;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .map-detail-back {
+    min-height: 44px;
+    padding: 10px 0;
+    font-size: 14px;
+  }
+  .map-zoom-controls {
+    right: 10px;
+    bottom: 10px;
+    gap: 6px;
+  }
+  .map-zoom-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+    border-radius: 12px;
+  }
+  .map-bottom {
+    flex-shrink: 0;
+    gap: 8px;
+  }
+  .map-legend {
+    padding: 10px 12px;
+    gap: 8px 10px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .map-legend::-webkit-scrollbar { display: none; }
+  .legend-item {
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+  .legend-item span { width: 10px; height: 10px; }
+  .map-detail-elem { font-size: 13px; }
+  .elem-icon { font-size: 18px; }
+  .map-canvas { touch-action: none; cursor: pointer; }
+  .detail-slot {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+}

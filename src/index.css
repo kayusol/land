@@ -1,0 +1,153 @@
+/* ── Global Reset & Base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #0b0f1a;
+  --surface:   #111827;
+  --surface2:  #1a2235;
+  --border:    #1e293b;
+  --primary:   #6366f1;
+  --primary-h: #818cf8;
+  --gold:      #f59e0b;
+  --wood:      #22c55e;
+  --water:     #3b82f6;
+  --fire:      #ef4444;
+  --soil:      #a78bfa;
+  --text:      #e2e8f0;
+  --text-dim:  #64748b;
+  --radius:    8px;
+  --shadow:    0 4px 24px rgba(0,0,0,.45);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+html, body, #root {
+  height: 100%;
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+}
+@supports (padding: env(safe-area-inset-top)) {
+  body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+}
+
+a { color: var(--primary-h); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── App Shell ── */
+.app { display: flex; flex-direction: column; height: 100%; }
+
+/* ── Nav ── */
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 20px;
+  height: 52px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.nav-logo {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  color: var(--primary-h);
+  margin-right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: var(--radius);
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  border: none;
+  background: none;
+}
+.nav-link:hover { background: var(--surface2); color: var(--text); }
+.nav-link.active { background: var(--surface2); color: var(--primary-h); }
+
+.nav-spacer { flex: 1; }
+
+/* ── Page Container ── */
+.page {
+  flex: 1;
+  overflow: auto;
+  padding: 24px;
+}
+
+/* ── Shared Card ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+}
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter .15s, opacity .15s;
+  border: none;
+}
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover:not(:disabled) { filter: brightness(1.15); }
+.btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+.btn-ghost:hover:not(:disabled) { border-color: var(--primary); }
+
+/* ── Loading / Empty ── */
+.loading-spinner, .empty-state, .connect-prompt {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: var(--text-dim);
+  font-size: 15px;
+  gap: 8px;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ── 移动端适配 ── */
+@media (max-width: 768px) {
+  html, body, #root { font-size: 13px; }
+  .page {
+    padding: 12px;
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+  .card { padding: 14px; }
+  .btn { min-height: 44px; padding: 10px 16px; }
+}
+@media (max-width: 480px) {
+  .page { padding: 10px; padding-left: max(10px, env(safe-area-inset-left)); padding-right: max(10px, env(safe-area-inset-right)); }
+}
