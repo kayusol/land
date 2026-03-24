@@ -23,7 +23,7 @@ const MINING_ABI=[
   {type:'function',name:'slotCount',inputs:[{name:'l',type:'uint256'}],outputs:[{type:'uint256'}],stateMutability:'view'},
   {type:'function',name:'slots',inputs:[{name:'l',type:'uint256'},{name:'i',type:'uint256'}],outputs:[{name:'apostleId',type:'uint256'},{name:'drillId',type:'uint256'},{name:'startTime',type:'uint256'}],stateMutability:'view'},
   {type:'function',name:'pendingRewards',inputs:[{name:'l',type:'uint256'}],outputs:[{type:'uint256[5]'}],stateMutability:'view'},
-  {type:'function',name:'claimLandReward',inputs:[{name:'l',type:'uint256'}],outputs:[],stateMutability:'nonpayable'},
+  {type:'function',name:'claim',inputs:[{name:'l',type:'uint256'}],outputs:[],stateMutability:'nonpayable'},
   {type:'function',name:'stopMining',inputs:[{name:'l',type:'uint256'},{name:'slot',type:'uint256'}],outputs:[],stateMutability:'nonpayable'},
 ]
 const AUC_ABI=[
@@ -621,7 +621,7 @@ function MiningTab({pc,address,wc}){
   async function handleClaim(landId){
     if(!wc)return; setMsg('领取中...')
     try{
-      const h=await wc.sendTransaction({to:CONTRACTS.mining,data:encodeFunctionData({abi:MINING_ABI,functionName:'claimLandReward',args:[BigInt(landId)]})})
+      const h=await wc.sendTransaction({to:CONTRACTS.mining,data:encodeFunctionData({abi:MINING_ABI,functionName:'claim',args:[BigInt(landId)]})})
       await pc.waitForTransactionReceipt({hash:h}); setMsg('✅ 领取成功！');setTimeout(()=>{setMsg('');load()},2000)
     }catch(e){setMsg('❌ '+(e.shortMessage||e.message))}
   }
