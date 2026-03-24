@@ -4,14 +4,23 @@ import { bscTestnet } from '../config/wagmi.js'
 
 function WalletBtn() {
   const { address, isConnected, chainId } = useAccount()
-  const { connect, connectors } = useConnect()
+  const { connect, connectors, isPending } = useConnect()
   const { disconnect } = useDisconnect()
   const { switchChain } = useSwitchChain()
   const isRight = chainId === bscTestnet.id
   const short = a => a ? a.slice(0,6)+'…'+a.slice(-4) : ''
+
+  function handleConnect() {
+    const order = ['metaMask','injected']
+    const sorted = [...connectors].sort((a,b)=>{const ai=order.indexOf(a.id),bi=order.indexOf(b.id);return(ai===-1?99:ai)-(bi===-1?99:bi)})
+    const c = sorted[0]
+    if (!c) { alert('请安装 MetaMask'); return }
+    connect({ connector: c, chainId: bscTestnet.id })
+  }
+
   if (!isConnected) return (
-    <button onClick={()=>connect({connector:connectors[0]})} style={{padding:'5px 14px',borderRadius:4,border:'1px solid var(--primary)',background:'none',color:'var(--primary)',fontFamily:'inherit',fontSize:11,cursor:'pointer',letterSpacing:'.08em'}}>
-      连接钱包
+    <button onClick={handleConnect} disabled={isPending} style={{padding:'5px 14px',borderRadius:4,border:'1px solid var(--primary)',background:'none',color:'var(--primary)',fontFamily:'inherit',fontSize:11,cursor:'pointer',letterSpacing:'.08em'}}>
+      {isPending ? '连接中...' : '连接钱包'}
     </button>
   )
   if (!isRight) return (

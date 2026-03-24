@@ -1,9 +1,9 @@
 import { createConfig, http } from 'wagmi'
-import { injected } from 'wagmi/connectors'
+import { injected, metaMask } from 'wagmi/connectors'
 
 export const bscTestnet = {
   id: 97,
-  name: 'BSC 测试网',
+  name: 'BSC Testnet',
   nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
   rpcUrls: {
     default: { http: ['https://bsc-testnet-rpc.publicnode.com'] },
@@ -21,6 +21,17 @@ export const bscTestnet = {
 
 export const wagmiConfig = createConfig({
   chains: [bscTestnet],
-  connectors: [injected()],
-  transports: { [bscTestnet.id]: http('https://bsc-testnet-rpc.publicnode.com') },
+  connectors: [
+    metaMask({
+      dappMetadata: {
+        name: '进化星球 BSC',
+        url: 'https://land-kayusol.vercel.app',
+      },
+    }),
+    injected({ target: 'metaMask' }),
+    injected(),
+  ],
+  transports: {
+    [bscTestnet.id]: http('https://bsc-testnet-rpc.publicnode.com'),
+  },
 })
