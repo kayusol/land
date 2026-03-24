@@ -10,7 +10,7 @@ function useReadContract({ address, abi, functionName, args, enabled=true, watch
     if (!enabled || !address) return
     setIsLoading(true)
     publicClient.readContract({ address, abi, functionName, args }).then(setData).catch(()=>{}).finally(()=>setIsLoading(false))
-  }, [address, functionName, JSON.stringify(args), enabled])
+  }, [address, functionName, args?.map?.(a=>typeof a==="bigint"?a.toString():String(a)).join(","), enabled])
   return { data, isLoading, refetch: ()=>{} }
 }
 // ────────────────────────────────────────────────────────────────────────────

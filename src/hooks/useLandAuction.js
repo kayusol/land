@@ -18,7 +18,7 @@ function useReadContracts({ contracts=[], enabled=true }) {
     if (!enabled || !contracts.length) return
     setIsLoading(true)
     publicClient.multicall({ contracts, allowFailure:true }).then(r=>setData(r.map(x=>({result:x.result,status:x.status})))).catch(()=>setData([])).finally(()=>setIsLoading(false))
-  }, [JSON.stringify(contracts), enabled])
+  }, [contracts?.length, enabled])
   return { data, isLoading }
 }
 
