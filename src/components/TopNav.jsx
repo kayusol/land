@@ -1,46 +1,80 @@
-import React, { useState } from 'react'
-import { useAccount, useConnect, useDisconnect, useSwitchChain } from 'wagmi'
-import { bscTestnet } from '../config/wagmi.js'
+import React, { useState, useEffect } from 'react'
 import './TopNav.css'
 
-function WalletBtn() {
-  const { address, isConnected, chainId } = useAccount()
-  const { connect, connectors, isPending, error } = useConnect()
-  const { disconnect } = useDisconnect()
-  const { switchChain } = useSwitchChain()
-  const [showError, setShowError] = useState(false)
-  const isRight = chainId === bscTestnet.id
-  const short = a => a ? a.slice(0,6)+'…'+a.slice(-4) : ''
+const BSC_TESTNET = {
+  chainId: '0x61',
+  chainName: 'BSC Testnet',
+  nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
+  rpcUrls: ['https://bsc-testnet-rpc.publicnode.com'],
+  blockExplorerUrls: ['https://testnet.bscscan.com'],
+}
 
-  async function handleConnect() {
-    setShowError(false)
-    // 优先 metaMask connector，其次 injected target=metaMask，最后通用 injected
-    const order = ['metaMask', 'injected']
-    const sorted = [...connectors].sort((a,b) => {
-      const ai = order.indexOf(a.id), bi = order.indexOf(b.id)
-      return (ai===-1?99:ai) - (bi===-1?99:bi)
-    })
-    const c = sorted[0]
-    if (!c) { alert('未找到钱包，请安装 MetaMask'); return }
+function WalletBtn() {
+  const [address, setAddress] = useState('')
+  const [chainId, setChainId] = useState('')
+  const [pending, setPending] = useState(false)
+  const short = a => a ? a.slice(0,6)+'…'+a.slice(-4) : ''
+  const isRight = chainId === '0x61'
+
+  useEffect(() => {
+    const eth = window.ethereum
+    if (!eth) return
+    // 恢复已连接状态
+    eth.request({ method: 'eth_accounts' }).then(acc => {
+      if (acc[0]) setAddress(acc[0])
+    }).catch(() => {})
+    eth.request({ method: 'eth_chainId' }).then(id => setChainId(id)).catch(() => {})
+    const onAccounts = accs => setAddress(accs[0] || '')
+    const onChain = id => setChainId(id)
+    eth.on('accountsChanged', onAccounts)
+    eth.on('chainChanged', onChain)
+    return () => { eth.removeListener('accountsChanged', onAccounts); eth.removeListener('chainChanged', onChain) }
+  }, [])
+
+  async function connect() {
+    const eth = window.ethereum
+    if (!eth) { alert('请先安装 MetaMask 钱包扩展'); return }
+    setPending(true)
     try {
-      connect({ connector: c, chainId: bscTestnet.id })
+      const accs = await eth.request({ method: 'eth_requestAccounts' })
+      setAddress(accs[0] || '')
+      // 切换到 BSC 测试网
+      try {
+        await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x61' }] })
+      } catch(e) {
+        if (e.code === 4902) {
+          await eth.request({ method: 'wallet_addEthereumChain', params: [BSC_TESTNET] })
+        }
+      }
+      const id = await eth.request({ method: 'eth_chainId' })
+      setChainId(id)
     } catch(e) {
-      setShowError(true)
+      console.error('connect error', e)
+    } finally { setPending(false) }
+  }
+
+  async function switchChain() {
+    const eth = window.ethereum
+    if (!eth) return
+    try {
+      await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x61' }] })
+    } catch(e) {
+      if (e.code === 4902) await eth.request({ method: 'wallet_addEthereumChain', params: [BSC_TESTNET] })
     }
   }
 
-  if (!isConnected) return (
-    <button className="nav-connect-btn" onClick={handleConnect} disabled={isPending}>
-      {isPending ? '连接中...' : '连接钱包'}
+  function disconnect() { setAddress('') }
+
+  if (!address) return (
+    <button className="nav-connect-btn" onClick={connect} disabled={pending}>
+      {pending ? '连接中...' : '连接钱包'}
     </button>
   )
   if (!isRight) return (
-    <button className="nav-connect-btn warn" onClick={()=>switchChain({chainId:bscTestnet.id})}>
-      ⚠ 切换BSC
-    </button>
+    <button className="nav-connect-btn warn" onClick={switchChain}>⚠ 切换BSC</button>
   )
   return (
-    <button className="nav-connect-btn connected" onClick={()=>disconnect()} title="点击断开">
+    <button className="nav-connect-btn connected" onClick={disconnect} title="点击断开">
       {short(address)}
     </button>
   )
@@ -64,9 +98,7 @@ export default function TopNav({ pages, current, onChange }) {
           </button>
         ))}
       </div>
-      <div className="nav-right">
-        <WalletBtn />
-      </div>
+      <div className="nav-right"><WalletBtn /></div>
     </nav>
   )
 }

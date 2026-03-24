@@ -1,28 +1,39 @@
-import React from 'react'
-import { useAccount, useConnect, useDisconnect, useSwitchChain } from 'wagmi'
+import React, { useState, useEffect } from 'react'
 import { bscTestnet } from '../config/wagmi.js'
 
+const BSC_HEX = '0x' + bscTestnet.id.toString(16)
+
 function WalletBtn() {
-  const { address, isConnected, chainId } = useAccount()
-  const { connect, connectors, isPending } = useConnect()
-  const { disconnect } = useDisconnect()
-  const { switchChain } = useSwitchChain()
-  const isRight = chainId === bscTestnet.id
+  const [address, setAddress] = useState('')
+  const [chainId, setChainId] = useState('')
+  const [pending, setPending] = useState(false)
   const short = a => a ? a.slice(0,6)+'…'+a.slice(-4) : ''
 
-  function handleConnect() {
-    const order = ['metaMask','injected']
-    const sorted = [...connectors].sort((a,b)=>{const ai=order.indexOf(a.id),bi=order.indexOf(b.id);return(ai===-1?99:ai)-(bi===-1?99:bi)})
-    const c = sorted[0]
-    if (!c) { alert('请安装 MetaMask'); return }
-    connect({ connector: c, chainId: bscTestnet.id })
+  useEffect(() => {
+    const eth = window.ethereum; if (!eth) return
+    eth.request({ method: 'eth_accounts' }).then(a => { if(a[0]) setAddress(a[0]) }).catch(()=>{})
+    eth.request({ method: 'eth_chainId' }).then(id => setChainId(id)).catch(()=>{})
+    const onAcc = a => setAddress(a[0]||'')
+    const onChain = id => setChainId(id)
+    eth.on('accountsChanged', onAcc); eth.on('chainChanged', onChain)
+    return () => { eth.removeListener('accountsChanged', onAcc); eth.removeListener('chainChanged', onChain) }
+  }, [])
+
+  async function connect() {
+    const eth = window.ethereum; if (!eth) { alert('请安装 MetaMask'); return }
+    setPending(true)
+    try {
+      const a = await eth.request({ method: 'eth_requestAccounts' }); setAddress(a[0]||'')
+      try { await eth.request({ method: 'wallet_switchEthereumChain', params: [{chainId: BSC_HEX}] }) }
+      catch(e) { if(e.code===4902) await eth.request({ method: 'wallet_addEthereumChain', params: [{ chainId: BSC_HEX, chainName: 'BSC Testnet', nativeCurrency: {name:'BNB',symbol:'BNB',decimals:18}, rpcUrls: ['https://bsc-testnet-rpc.publicnode.com'], blockExplorerUrls: ['https://testnet.bscscan.com'] }] }) }
+      setChainId(await eth.request({ method: 'eth_chainId' }))
+    } catch(e) { console.error(e) } finally { setPending(false) }
   }
 
-  if (!isConnected) return (
-    <button onClick={handleConnect} disabled={isPending} style={{padding:'5px 14px',borderRadius:4,border:'1px solid var(--primary)',background:'none',color:'var(--primary)',fontFamily:'inherit',fontSize:11,cursor:'pointer',letterSpacing:'.08em'}}>
-      {isPending ? '连接中...' : '连接钱包'}
-    </button>
-  )
+  if (!address) return <button onClick={connect} disabled={pending} style={{padding:'5px 14px',borderRadius:4,border:'1px solid var(--primary)',background:'none',color:'var(--primary)',fontFamily:'inherit',fontSize:11,cursor:'pointer'}}>{pending?'连接中...':'连接钱包'}</button>
+  if (chainId !== BSC_HEX) return <button onClick={async()=>{try{await window.ethereum?.request({method:'wallet_switchEthereumChain',params:[{chainId:BSC_HEX}]})}catch{}}} style={{padding:'5px 14px',borderRadius:4,border:'1px solid #f59e0b',background:'none',color:'#f59e0b',fontFamily:'inherit',fontSize:11,cursor:'pointer'}}>⚠ 切换BSC</button>
+  return <button onClick={()=>setAddress('')} title="点击断开" style={{padding:'5px 14px',borderRadius:4,border:'1px solid var(--green)',background:'none',color:'var(--green)',fontFamily:'inherit',fontSize:11,cursor:'pointer'}}>{short(address)}</button>
+}
   if (!isRight) return (
     <button onClick={()=>switchChain({chainId:bscTestnet.id})} style={{padding:'5px 14px',borderRadius:4,border:'1px solid #f59e0b',background:'none',color:'#f59e0b',fontFamily:'inherit',fontSize:11,cursor:'pointer'}}>
       ⚠ 切换BSC
