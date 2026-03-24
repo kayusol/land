@@ -1,2 +1,2 @@
-// 同 src/config/wagmi.js，保留向后兼容
-export { wagmiConfig, bscTestnet } from './config/wagmi.js'
+// 兼容层 — 从 WalletContext 重新导出
+export { bscTestnet, publicClient } from './contexts/WalletContext.jsx'

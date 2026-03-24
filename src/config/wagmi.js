@@ -1,3 +1,2 @@
-// src/config/wagmi.js — 仅保留 bscTestnet 定义供向后兼容
-// 实际钱包逻辑全在 WalletContext.jsx
+// 兼容层 — 从 WalletContext 重新导出
 export { bscTestnet, publicClient } from '../contexts/WalletContext.jsx'
