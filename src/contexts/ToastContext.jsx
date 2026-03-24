@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react'
+import React, {useEffect,  createContext, useContext, useState, useCallback } from 'react'
 
 const Ctx = createContext(null)
 export const useToast = () => useContext(Ctx)

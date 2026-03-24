@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, {useEffect,  useState } from 'react'
 import { useAccount, useWalletClient, usePublicClient } from '../contexts/WalletContext.jsx'
 
 import { parseEther, encodeFunctionData } from 'viem'

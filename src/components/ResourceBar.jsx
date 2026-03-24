@@ -4,9 +4,9 @@ import React from 'react'
 import { publicClient } from '../contexts/WalletContext.jsx'
 
 function useReadContract({ address, abi, functionName, args, enabled=true, watch=false }) {
-  const [data, setData] = React.useState(undefined)
-  const [isLoading, setIsLoading] = React.useState(false)
-  React.useEffect(() => {
+  const [data, setData] = useState(undefined)
+  const [isLoading, setIsLoading] = useState(false)
+  useEffect(() => {
     if (!enabled || !address) return
     setIsLoading(true)
     publicClient.readContract({ address, abi, functionName, args }).then(setData).catch(()=>{}).finally(()=>setIsLoading(false))

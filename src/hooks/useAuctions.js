@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 
 import { CONTRACTS } from '../constants/contracts'
 
@@ -5,9 +6,9 @@ import { CONTRACTS } from '../constants/contracts'
 import { publicClient } from '../contexts/WalletContext.jsx'
 
 function useReadContracts({ contracts=[], enabled=true }) {
-  const [data, setData] = React.useState([])
-  const [isLoading, setIsLoading] = React.useState(false)
-  React.useEffect(() => {
+  const [data, setData] = useState([])
+  const [isLoading, setIsLoading] = useState(false)
+  useEffect(() => {
     if (!enabled || !contracts.length) return
     setIsLoading(true)
     publicClient.multicall({ contracts, allowFailure:true }).then(r=>setData(r.map(x=>({result:x.result,status:x.status})))).catch(()=>setData([])).finally(()=>setIsLoading(false))

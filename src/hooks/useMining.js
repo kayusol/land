@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 /**
  * useMining — start/stop mining and claim rewards for a land parcel
  * Returns: { pendingRewards, startMining, stopMining, claim, slotCount }
@@ -9,9 +10,9 @@ import { useAccount } from '../contexts/WalletContext.jsx'
 import { publicClient } from '../contexts/WalletContext.jsx'
 
 function useReadContracts({ contracts=[], enabled=true }) {
-  const [data, setData] = React.useState([])
-  const [isLoading, setIsLoading] = React.useState(false)
-  React.useEffect(() => {
+  const [data, setData] = useState([])
+  const [isLoading, setIsLoading] = useState(false)
+  useEffect(() => {
     if (!enabled || !contracts.length) return
     setIsLoading(true)
     publicClient.multicall({ contracts, allowFailure:true }).then(r=>setData(r.map(x=>({result:x.result,status:x.status})))).catch(()=>setData([])).finally(()=>setIsLoading(false))
@@ -20,7 +21,7 @@ function useReadContracts({ contracts=[], enabled=true }) {
 }
 
 function useWriteContract() {
-  const [isPending, setIsPending] = React.useState(false)
+  const [isPending, setIsPending] = useState(false)
   async function writeContractAsync(params) {
     // pages using this should migrate to wc.writeContract
     setIsPending(true)
