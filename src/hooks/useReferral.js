@@ -2,7 +2,7 @@
  * useReferral — bind referrer and read referral tree
  * Returns: { isBound, referrer, ancestors, rates, bind, totalEarned }
  */
-import { useReadContracts, useWriteContract } from 'wagmi'
+
 import { useAccount } from '../contexts/WalletContext.jsx'
 import { CONTRACTS } from '../constants/contracts'
 import { REFERRAL_ABI } from '../constants/abi'

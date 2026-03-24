@@ -1,4 +1,4 @@
-import { useReadContracts } from 'wagmi'
+
 import { CONTRACTS } from '../constants/contracts'
 import { AUCTION_ABI } from '../constants/abi'
 import { formatEther } from 'viem'
@@ -52,3 +52,5 @@ export function useAuctions() {
 
   return { auctions, isLoading, refetch }
 }
+
+function useReadContracts(){return{data:[],isLoading:false}}

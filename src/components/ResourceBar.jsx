@@ -1,6 +1,6 @@
 import React from 'react'
 import { useAccount } from '../contexts/WalletContext.jsx'
-import { useReadContract } from 'wagmi'
+
 import { formatEther } from 'viem'
 import { CONTRACTS, RES_KEYS, RES_NAMES_ZH, RES_EMOJIS, RES_COLORS } from '../constants/contracts.js'
 import { ERC20_ABI } from '../constants/abi.js'

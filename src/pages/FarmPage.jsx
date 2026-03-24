@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useAccount } from '../contexts/WalletContext.jsx'
-import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+
 import { parseEther, formatEther } from 'viem'
 import { CONTRACTS } from '../constants/contracts'
 import { ERC20_ABI } from '../constants/abi'

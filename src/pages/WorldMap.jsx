@@ -916,11 +916,9 @@ export default function WorldMap() {
                   <div key={i} className={`wm-slot${s?' used':''}`}>
                     {s&&s.drillId>0n?(
                       <div className="wm-slot-inner">
-                        <div className="wm-drill-box" style={{background:ELEMS[s.drillElem||0]?.c+'22',borderColor:ELEMS[s.drillElem||0]?.c+'66'}}>
-                          <span style={{fontSize:'1.2rem'}}>⛏️</span>
-                          <div style={{fontSize:'.55rem',color:ELEMS[s.drillElem||0]?.c}}>{'★'.repeat(s.drillTier||1)}</div>
-                        </div>
+                        <img src={drillImgUrl(s.drillElem||0, s.drillTier||1)} style={{width:36,height:36,objectFit:'contain'}}/>
                         <div className="wm-slot-lbl">#{s.drillId.toString()}</div>
+                        <div style={{fontSize:'.6rem',color:ELEMS[s.drillElem||0]?.color}}>{'★'.repeat(s.drillTier||1)}</div>
                       </div>
                     ):<div className="wm-slot-add" style={{opacity:.3}}>—</div>}
                   </div>

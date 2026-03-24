@@ -1,4 +1,4 @@
-import { useReadContracts } from 'wagmi'
+
 import { useAccount } from '../contexts/WalletContext.jsx'
 import { CONTRACTS, RESOURCE_TOKENS } from '../constants/contracts'
 import { ERC20_ABI } from '../constants/abi'

@@ -2,7 +2,7 @@
  * useBlindBox — buy apostle/drill blind boxes
  * Returns: { apostlePrice, drillPrice, buyApostle, buyDrill, buyApostleBatch, buyDrillBatch }
  */
-import { useReadContracts, useWriteContract } from 'wagmi'
+
 import { formatUnits, parseUnits } from 'viem'
 import { CONTRACTS } from '../constants/contracts'
 import { BLINDBOX_ABI, ERC20_ABI } from '../constants/abi'
@@ -69,3 +69,6 @@ export function useBlindBox() {
     buyApostle, buyDrill, buyApostleBatch, buyDrillBatch,
   }
 }
+
+function useReadContracts(){return{data:[],isLoading:false}}
+function useWriteContract(){return{writeContractAsync:async()=>{throw new Error('use sendTransaction instead')},isPending:false}}

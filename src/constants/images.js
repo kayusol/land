@@ -4,11 +4,13 @@ const GH = 'https://raw.githubusercontent.com/evolutionlandorg/evo-frontend/main
 // 使徒孵化器 GIF
 export const APO_EGG_GIF = `${GH}/apostle/egg.gif`
 
-// 钻头图片: class(0-4) x lv(1-5)
-// 原版 class0=金,class1=木,class2=水(火土也映射到class2)
+// 钻头图片: class(0-2) x lv(1-5)
+// class0=金/土, class1=木/火, class2=水
 export function drillImgUrl(elem, tier) {
-  const cls = Math.min(elem, 2)
-  const lv  = Math.min(Math.max(tier, 1), 4)
+  // elem: 0=金,1=木,2=水,3=火,4=土 → class映射
+  const classMap = [0, 1, 2, 1, 0]  // 金→0,木→1,水→2,火→1,土→0
+  const cls = classMap[elem] ?? 0
+  const lv  = Math.min(Math.max(Number(tier) || 1, 1), 5)
   return `${GH}/drill/class${cls}/lv${lv}.gif`
 }
 
