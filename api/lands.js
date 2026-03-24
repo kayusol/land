@@ -32,7 +32,7 @@ const TTL = 10 * 60 * 1000  // 10分钟
 async function getLogs(address, event, from, to) {
   const logs = []
   for (let f = from; f <= to; f += CHUNK) {
-    const t = f + CHUNK - 1n < to ? f + CHUNK - 1n : to
+    const t = f + CHUNK - 1n > to ? to : f + CHUNK - 1n
     try { logs.push(...await pc.getLogs({ address, event, fromBlock: f, toBlock: t })) } catch {}
   }
   return logs

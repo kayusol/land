@@ -96,11 +96,11 @@ async function fetchActiveListings() {
 }
 
 async function fetchActiveListingsFallback(pc) {
-  // 回退方案：只扫最近45000块（BSC限制50000）
   if (!pc) return { apoIds:[], drlIds:[], landIds:[], oldLandIds:[] }
   const latest = await pc.getBlockNumber().catch(()=>0n)
   if (!latest) return { apoIds:[], drlIds:[], landIds:[], oldLandIds:[] }
-  const FROM = latest - 44000n < DEPLOY_BLOCK ? DEPLOY_BLOCK : latest - 44000n
+  // 只扫最近 44000 块（安全范围内）
+  const FROM = latest > 44000n ? latest - 44000n : 0n
 
   const [created, won, cancelled, oldCreated, oldWon, oldCxd] = await Promise.all([
     pc.getLogs({ address: NFT_AUCTION_ADDR, event: NFT_AUC_ABI[4], fromBlock: FROM, toBlock: 'latest' }).catch(()=>[]),
