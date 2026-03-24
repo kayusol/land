@@ -10,8 +10,6 @@ const BB_ABI=[
   {type:'function',name:'drillBoxPrice',inputs:[],outputs:[{type:'uint256'}],stateMutability:'view'},
   {type:'function',name:'buyApostleBox',inputs:[],outputs:[{type:'uint256'}],stateMutability:'nonpayable'},
   {type:'function',name:'buyDrillBox',inputs:[],outputs:[{type:'uint256'}],stateMutability:'nonpayable'},
-  {type:'function',name:'buyApostleBoxBatch',inputs:[{name:'count',type:'uint256'}],outputs:[],stateMutability:'nonpayable'},
-  {type:'function',name:'buyDrillBoxBatch',inputs:[{name:'count',type:'uint256'}],outputs:[],stateMutability:'nonpayable'},
 ]
 const ERC20_ABI=[
   {type:'function',name:'approve',inputs:[{name:'s',type:'address'},{name:'a',type:'uint256'}],outputs:[{type:'bool'}],stateMutability:'nonpayable'},
@@ -48,27 +46,22 @@ export default function BlindBoxPage(){
     try{
       const h1=await wc.sendTransaction({to:CONTRACTS.ring,data:encodeFunctionData({abi:ERC20_ABI,functionName:'approve',args:[CONTRACTS.blindbox,total]})})
       await pc.waitForTransactionReceipt({hash:h1})
-      setMsg(`开启 ${count} 个${type==='apostle'?'使徒':'钻头'}盲盒...`)
-      const fn=count>1?(type==='apostle'?'buyApostleBoxBatch':'buyDrillBoxBatch'):(type==='apostle'?'buyApostleBox':'buyDrillBox')
-      const args=count>1?[BigInt(count)]:[]
-      const h2=await wc.sendTransaction({to:CONTRACTS.blindbox,data:encodeFunctionData({abi:BB_ABI,functionName:fn,args})})
-      const receipt=await pc.waitForTransactionReceipt({hash:h2})
-      // 从 Transfer 事件解析 tokenId
+      // 合约不支持批量，循环单次调用
+      const buyFn=type==='apostle'?'buyApostleBox':'buyDrillBox'
       const nftAddr=(type==='apostle'?CONTRACTS.apostle:CONTRACTS.drill).toLowerCase()
-      const newIds=receipt.logs
-        .filter(l=>l.address.toLowerCase()===nftAddr)
-        .map(l=>{try{return Number(BigInt(l.topics[3]))}catch{return null}})
-        .filter(Boolean)
-      if(newIds.length>0){
-        const attrRes=await pc.multicall({contracts:newIds.map(id=>({address:type==='apostle'?CONTRACTS.apostle:CONTRACTS.drill,abi:type==='apostle'?APO_ABI:DRL_ABI,functionName:'attrs',args:[BigInt(id)]})),allowFailure:true})
-        const newResults=newIds.map((id,i)=>{
-          const at=attrRes[i]?.result
-          return type==='apostle'
-            ? {type,id,strength:at?Number(at[0]):30,elem:at?Number(at[1]):0}
-            : {type,id,tier:at?Number(at[0]):1,elem:at?Number(at[1]):0}
-        })
+      const allNewIds=[]
+      for(let i=0;i<count;i++){
+        setMsg(`开启第 ${i+1}/${count} 个${type==='apostle'?'使徒':'钻头'}盲盒...`)
+        const h=await wc.sendTransaction({to:CONTRACTS.blindbox,data:encodeFunctionData({abi:BB_ABI,functionName:buyFn,args:[]})})
+        const receipt=await pc.waitForTransactionReceipt({hash:h})
+        const ids=receipt.logs.filter(l=>l.address.toLowerCase()===nftAddr).map(l=>{try{return Number(BigInt(l.topics[3]))}catch{return null}}).filter(Boolean)
+        allNewIds.push(...ids)
+      }
+      if(allNewIds.length>0){
+        const attrRes=await pc.multicall({contracts:allNewIds.map(id=>({address:type==='apostle'?CONTRACTS.apostle:CONTRACTS.drill,abi:type==='apostle'?APO_ABI:DRL_ABI,functionName:'attrs',args:[BigInt(id)]})),allowFailure:true})
+        const newResults=allNewIds.map((id,i)=>{const at=attrRes[i]?.result;return type==='apostle'?{type,id,strength:at?Number(at[0]):30,elem:at?Number(at[1]):0}:{type,id,tier:at?Number(at[0]):1,elem:at?Number(at[1]):0}})
         setResults(r=>[...newResults,...r].slice(0,20))
-        setMsg(`🎉 获得 ${newIds.length} 个${type==='apostle'?'使徒':'钻头'}！`)
+        setMsg(`🎉 获得 ${allNewIds.length} 个${type==='apostle'?'使徒':'钻头'}！`)
       } else {
         setMsg('✅ 购买成功！去资产页查看')
       }
