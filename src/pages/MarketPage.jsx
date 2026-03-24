@@ -34,7 +34,7 @@ const DRL_ABI=[{type:'function',name:'attrs',inputs:[{name:'id',type:'uint256'}]
 const LAND_ABI=[{type:'function',name:'resourceAttr',inputs:[{name:'tokenId',type:'uint256'}],outputs:[{type:'uint80'}],stateMutability:'view'},{type:'function',name:'slotCount',inputs:[{name:'landId',type:'uint256'}],outputs:[{type:'uint256'}],stateMutability:'view'}]
 
 // ── IndexedDB 缓存 ── 持久化，支持大数据量 ─────────────────────────────
-const DB_NAME = 'evomarket', DB_VER = 3, STORE = 'market'
+const DB_NAME = 'evomarket', DB_VER = 4, STORE = 'market'
 async function openDB() {
   return new Promise((res, rej) => {
     const req = indexedDB.open(DB_NAME, DB_VER)
@@ -186,7 +186,7 @@ async function enrichLands(pc, ids, oldIds) {
       const a=isNew(id)?raw:{seller:raw[0],startPrice:raw[1],endPrice:raw[2],duration:raw[3],startedAt:raw[4]}
       if(!a.startedAt||a.startedAt===0n) return
       const cp=prR[j]?.result??0n
-      result.push({id,seller:a.seller,startPrice:a.startPrice,endPrice:a.endPrice,duration:a.duration,startedAt:a.startedAt,currentPrice:cp,endsAt:Number(a.startedAt)+Number(a.duration),resourceAttr:raR[j]?.result??0n,miningSlots:Number(slR[j]?.result??0n)})
+      result.push({id,seller:a.seller,startPrice:a.startPrice,endPrice:a.endPrice,duration:a.duration,startedAt:a.startedAt,currentPrice:cp,endsAt:Number(a.startedAt)+Number(a.duration),resourceAttr:raR[j]?.result??0n,miningSlots:Number(slR[j]?.result??0n),_isOld:!isNew(id)})
     })
   }
   return result
@@ -335,16 +335,20 @@ export default function MarketPage(){
 
   const load = useCallback(async (force=false) => {
     if(!pc||loadingRef.current) return
-    // 1. 先从 IndexedDB 读缓存，立即渲染
+    // 1. 先从 IndexedDB 读缓存立即渲染（仅非强制刷新时）
     if(!force) {
       const cached = await loadMarketCache()
-      if(cached && !cached.fresh===false) {
+      if(cached) {
         const {data} = cached
-        setLands(data.lands||[]); setApostles(data.apostles||[]); setDrills(data.drills||[])
-        setStatus('cache')
-        // 如果缓存 < 5分钟，完全不请求链上
-        if(cached.fresh) { setStatus('done'); return }
-        // 缓存 5~30分钟，后台静默刷新
+        // 只要缓存有数据就先显示
+        if((data.lands?.length||0)+(data.apostles?.length||0)+(data.drills?.length||0) > 0) {
+          setLands(data.lands||[]); setApostles(data.apostles||[]); setDrills(data.drills||[])
+          setStatus('cache')
+        }
+        // fresh缓存（5分钟内）且有数据 → 直接返回
+        if(cached.fresh && (data.lands?.length||0)+(data.apostles?.length||0)+(data.drills?.length||0) > 0) {
+          setStatus('done'); return
+        }
       }
     }
     // 2. 从链上事件索引拿活跃拍卖ID（速度快，仅1次getLogs）
@@ -379,14 +383,19 @@ export default function MarketPage(){
   async function handleBuy(id, price, seller, type) {
     if(!wc||!address){alert('请先连接钱包');return}
     const isMe = address&&seller?.toLowerCase()===address.toLowerCase()
-    const isLand = tab==='land'
     const nftContract = type==='apostle'?CONTRACTS.apostle:type==='drill'?CONTRACTS.drill:CONTRACTS.land
+    // 判断是新合约还是旧合约（土地有两个合约）
+    const isOldLand = type==='land' && lands.find(l=>l.id===id&&l._isOld)
+    const useOldContract = isOldLand
     if(isMe&&!price){
       setMsg('撤销中...')
       try{
-        const h = isLand
-          ? await wc.sendTransaction({to:CONTRACTS.auction,data:encodeFunctionData({abi:AUC_ABI,functionName:'cancelAuction',args:[BigInt(id)]})})
-          : await wc.sendTransaction({to:NFT_AUCTION_ADDR,data:encodeFunctionData({abi:NFT_AUC_ABI,functionName:'cancelAuction',args:[nftContract,BigInt(id)]})})
+        let h
+        if(useOldContract){
+          h=await wc.sendTransaction({to:CONTRACTS.auction,data:encodeFunctionData({abi:AUC_ABI,functionName:'cancelAuction',args:[BigInt(id)]})})
+        } else {
+          h=await wc.sendTransaction({to:NFT_AUCTION_ADDR,data:encodeFunctionData({abi:NFT_AUC_ABI,functionName:'cancelAuction',args:[nftContract,BigInt(id)]})})
+        }
         await pc.waitForTransactionReceipt({hash:h})
         setMsg('✅ 已撤销');setDetail(null);setTimeout(()=>{setMsg('');load(true)},1500)
       }catch(e){setMsg('❌ '+(e.shortMessage||e.message))}
@@ -394,13 +403,16 @@ export default function MarketPage(){
     }
     setMsg('授权 RING...')
     try{
-      const aucAddr = isLand ? CONTRACTS.auction : NFT_AUCTION_ADDR
+      const aucAddr = useOldContract ? CONTRACTS.auction : NFT_AUCTION_ADDR
       const h1=await wc.sendTransaction({to:CONTRACTS.ring,data:encodeFunctionData({abi:ERC20_ABI,functionName:'approve',args:[aucAddr,price]})})
       await pc.waitForTransactionReceipt({hash:h1})
       setMsg('购买中...')
-      const h2 = isLand
-        ? await wc.sendTransaction({to:CONTRACTS.auction,data:encodeFunctionData({abi:AUC_ABI,functionName:'bid',args:[BigInt(id),price]})})
-        : await wc.sendTransaction({to:NFT_AUCTION_ADDR,data:encodeFunctionData({abi:NFT_AUC_ABI,functionName:'bid',args:[nftContract,BigInt(id),price]})})
+      let h2
+      if(useOldContract){
+        h2=await wc.sendTransaction({to:CONTRACTS.auction,data:encodeFunctionData({abi:AUC_ABI,functionName:'bid',args:[BigInt(id),price]})})
+      } else {
+        h2=await wc.sendTransaction({to:NFT_AUCTION_ADDR,data:encodeFunctionData({abi:NFT_AUC_ABI,functionName:'bid',args:[nftContract,BigInt(id),price]})})
+      }
       await pc.waitForTransactionReceipt({hash:h2})
       setMsg('🎉 购买成功！');setDetail(null)
       setTimeout(()=>{setMsg('');load(true)},1500)
