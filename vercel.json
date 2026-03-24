@@ -1,5 +1,18 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "functions": {
+    "api/listings.js": { "maxDuration": 30 },
+    "api/cron-refresh.js": { "maxDuration": 30 }
+  },
+  "crons": [
+    {
+      "path": "/api/cron-refresh",
+      "schedule": "*/5 * * * *"
+    }
+  ]
 }

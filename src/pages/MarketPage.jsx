@@ -70,46 +70,58 @@ async function loadMarketCache() {
   } catch { return null }
 }
 
-// ── 事件日志扫描（核心优化：一次getLogs拿所有在售） ──────────────────────
-async function fetchActiveListings(pc) {
-  // BSC Testnet RPC 限制 getLogs 最多 50000 块范围，必须从部署区块开始
-  const FROM = DEPLOY_BLOCK
+// ── 事件日志扫描（通过后端API索引，解决RPC块限制问题） ─────────────────
+const API_BASE = import.meta.env.VITE_API_BASE || '/api'
 
-  // 1. 从 NFTAuction 拿所有 AuctionCreated 事件
-  const [created, won, cancelled] = await Promise.all([
-    pc.getLogs({ address: NFT_AUCTION_ADDR, event: NFT_AUC_ABI[4+0],
-      fromBlock: FROM, toBlock: 'latest' }).catch(()=>[]),
-    pc.getLogs({ address: NFT_AUCTION_ADDR, event: NFT_AUC_ABI[4+1],
-      fromBlock: FROM, toBlock: 'latest' }).catch(()=>[]),
-    pc.getLogs({ address: NFT_AUCTION_ADDR, event: NFT_AUC_ABI[4+2],
-      fromBlock: FROM, toBlock: 'latest' }).catch(()=>[]),
-  ])
+async function fetchActiveListings() {
+  // 优先调用后端索引 API
+  try {
+    const res = await fetch(`${API_BASE}/listings`)
+    if (!res.ok) throw new Error(`API ${res.status}`)
+    const data = await res.json()
+    if (data.ok) {
+      return {
+        apoIds:     data.apostleIds  || [],
+        drlIds:     data.drillIds    || [],
+        landIds:    data.landIds     || [],
+        oldLandIds: data.oldLandIds  || [],
+      }
+    }
+    throw new Error(data.error || 'API error')
+  } catch(apiErr) {
+    console.warn('API fallback to direct scan:', apiErr.message)
+    // 回退到直接链上扫描（仅扫最近50000块）
+    return await fetchActiveListingsFallback(window._publicClient)
+  }
+}
 
-  // 2. 计算仍在售的：created - won - cancelled
-  const sold = new Set(won.map(e => e.args.nft?.toLowerCase() + '_' + e.args.id?.toString()))
-  const cxd  = new Set(cancelled.map(e => e.args.nft?.toLowerCase() + '_' + e.args.id?.toString()))
-  const active = created.filter(e => {
-    const k = e.args.nft?.toLowerCase() + '_' + e.args.id?.toString()
-    return !sold.has(k) && !cxd.has(k)
-  })
+async function fetchActiveListingsFallback(pc) {
+  // 回退方案：只扫最近45000块（BSC限制50000）
+  if (!pc) return { apoIds:[], drlIds:[], landIds:[], oldLandIds:[] }
+  const latest = await pc.getBlockNumber().catch(()=>0n)
+  if (!latest) return { apoIds:[], drlIds:[], landIds:[], oldLandIds:[] }
+  const FROM = latest - 44000n < DEPLOY_BLOCK ? DEPLOY_BLOCK : latest - 44000n
 
-  // 按类型分组
-  const apoIds   = active.filter(e=>e.args.nft?.toLowerCase()===CONTRACTS.apostle.toLowerCase()).map(e=>Number(e.args.id))
-  const drlIds   = active.filter(e=>e.args.nft?.toLowerCase()===CONTRACTS.drill.toLowerCase()).map(e=>Number(e.args.id))
-  const landIds  = active.filter(e=>e.args.nft?.toLowerCase()===CONTRACTS.land.toLowerCase()).map(e=>Number(e.args.id))
-
-  // 3. 旧拍卖合约的土地（AuctionCreated事件）
-  const [oldCreated, oldWon, oldCxd] = await Promise.all([
+  const [created, won, cancelled, oldCreated, oldWon, oldCxd] = await Promise.all([
+    pc.getLogs({ address: NFT_AUCTION_ADDR, event: NFT_AUC_ABI[4], fromBlock: FROM, toBlock: 'latest' }).catch(()=>[]),
+    pc.getLogs({ address: NFT_AUCTION_ADDR, event: NFT_AUC_ABI[5], fromBlock: FROM, toBlock: 'latest' }).catch(()=>[]),
+    pc.getLogs({ address: NFT_AUCTION_ADDR, event: NFT_AUC_ABI[6], fromBlock: FROM, toBlock: 'latest' }).catch(()=>[]),
     pc.getLogs({ address: CONTRACTS.auction, event: OLD_AUC_EVENTS[0], fromBlock: FROM, toBlock: 'latest' }).catch(()=>[]),
     pc.getLogs({ address: CONTRACTS.auction, event: OLD_AUC_EVENTS[1], fromBlock: FROM, toBlock: 'latest' }).catch(()=>[]),
     pc.getLogs({ address: CONTRACTS.auction, event: OLD_AUC_EVENTS[2], fromBlock: FROM, toBlock: 'latest' }).catch(()=>[]),
   ])
+  const sold = new Set(won.map(e=>e.args.nft?.toLowerCase()+'_'+e.args.id?.toString()))
+  const cxd  = new Set(cancelled.map(e=>e.args.nft?.toLowerCase()+'_'+e.args.id?.toString()))
+  const active = created.filter(e=>{ const k=e.args.nft?.toLowerCase()+'_'+e.args.id?.toString(); return !sold.has(k)&&!cxd.has(k) })
   const oldSold = new Set(oldWon.map(e=>e.args.id?.toString()))
   const oldCxd2 = new Set(oldCxd.map(e=>e.args.id?.toString()))
   const oldActive = oldCreated.filter(e=>!oldSold.has(e.args.id?.toString())&&!oldCxd2.has(e.args.id?.toString()))
-  const oldLandIds = oldActive.map(e=>Number(e.args.id))
-
-  return { apoIds, drlIds, landIds, oldLandIds }
+  return {
+    apoIds:    active.filter(e=>e.args.nft?.toLowerCase()===CONTRACTS.apostle.toLowerCase()).map(e=>Number(e.args.id)),
+    drlIds:    active.filter(e=>e.args.nft?.toLowerCase()===CONTRACTS.drill.toLowerCase()).map(e=>Number(e.args.id)),
+    landIds:   active.filter(e=>e.args.nft?.toLowerCase()===CONTRACTS.land.toLowerCase()).map(e=>Number(e.args.id)),
+    oldLandIds:oldActive.map(e=>Number(e.args.id)),
+  }
 }
 
 // ── 批量读取属性和价格 ─────────────────────────────────────────────────
@@ -339,8 +351,9 @@ export default function MarketPage(){
     loadingRef.current = true
     setStatus('loading')
     try {
-      setMsg('正在从链上事件索引加载...')
-      const {apoIds, drlIds, landIds, oldLandIds} = await fetchActiveListings(pc)
+      window._publicClient = pc  // 供 fallback 使用
+      setMsg('正在从索引服务加载...')
+      const { apoIds, drlIds, landIds, oldLandIds } = await fetchActiveListings()
       setMsg(`发现 ${apoIds.length} 使徒 / ${drlIds.length} 钻头 / ${landIds.length+oldLandIds.length} 土地，读取详情...`)
       // 3. 并行 multicall 读属性和价格
       const [apos, drls, lnds] = await Promise.all([
@@ -406,6 +419,7 @@ export default function MarketPage(){
         <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:4}}>
           {ringBal!=null&&<span style={{fontSize:'.72rem',color:'#f0c040'}}>💰 {Number(formatEther(ringBal)).toFixed(2)} RING</span>}
           {status==='cache'&&<span style={{fontSize:'.65rem',color:'#5040a0'}}>⚡ 缓存中，后台更新...</span>}
+          {status==='loading'&&cur.length>0&&<span style={{fontSize:'.65rem',color:'#5040a0'}}>🔄 索引更新中...</span>}
           <button className="mk-refresh" onClick={()=>load(true)} disabled={status==='loading'}>
             {status==='loading'?<><span className="mk-spin"/>加载中</>:'🔄 刷新'}
           </button>
