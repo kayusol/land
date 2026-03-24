@@ -2,17 +2,24 @@ import React from 'react'
 import { useWallet } from '../contexts/WalletContext.jsx'
 import './TopNav.css'
 
-const BSC_TESTNET = {
-  chainId: '0x61',
-  chainName: 'BSC Testnet',
-  nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
-  rpcUrls: ['https://bsc-testnet-rpc.publicnode.com'],
-  blockExplorerUrls: ['https://testnet.bscscan.com'],
-}
-
 function WalletBtn() {
   const { address, isConnected, isCorrectChain, isPending, connectWallet, disconnectWallet } = useWallet()
   const short = a => a ? a.slice(0,6)+'…'+a.slice(-4) : ''
+
+  async function handleSwitchChain() {
+    try {
+      await window.ethereum?.request({ method:'wallet_switchEthereumChain', params:[{chainId:'0x61'}] })
+    } catch(e) {
+      if (e.code === 4902) {
+        await window.ethereum?.request({ method:'wallet_addEthereumChain', params:[{
+          chainId:'0x61', chainName:'BSC Testnet',
+          nativeCurrency:{name:'BNB',symbol:'BNB',decimals:18},
+          rpcUrls:['https://bsc-testnet-rpc.publicnode.com'],
+          blockExplorerUrls:['https://testnet.bscscan.com'],
+        }]})
+      }
+    }
+  }
 
   if (!isConnected) return (
     <button className="nav-connect-btn" onClick={connectWallet} disabled={isPending}>
@@ -20,9 +27,7 @@ function WalletBtn() {
     </button>
   )
   if (!isCorrectChain) return (
-    <button className="nav-connect-btn warn" onClick={async()=>{
-      try { await window.ethereum?.request({method:'wallet_switchEthereumChain',params:[{chainId:'0x61'}]}) } catch {}
-    }}>⚠ 切换BSC</button>
+    <button className="nav-connect-btn warn" onClick={handleSwitchChain}>⚠ 切换BSC</button>
   )
   return (
     <button className="nav-connect-btn connected" onClick={disconnectWallet} title="点击断开">

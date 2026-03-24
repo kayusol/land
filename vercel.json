@@ -6,13 +6,11 @@
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "functions": {
-    "api/listings.js": { "maxDuration": 30 },
-    "api/cron-refresh.js": { "maxDuration": 30 }
+    "api/listings.js":    { "maxDuration": 30 },
+    "api/lands.js":       { "maxDuration": 30 },
+    "api/cron-refresh.js":{ "maxDuration": 30 }
   },
   "crons": [
-    {
-      "path": "/api/cron-refresh",
-      "schedule": "*/5 * * * *"
-    }
+    { "path": "/api/cron-refresh", "schedule": "*/5 * * * *" }
   ]
 }

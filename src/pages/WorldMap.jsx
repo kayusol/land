@@ -239,10 +239,11 @@ export default function WorldMap() {
     return{x:Math.max(0,Math.min(Math.max(0,mapW-w/z),p.x)),y:Math.max(0,Math.min(Math.max(0,mapH-h/z),p.y))}
   },[mapW,mapH])
 
-  // 数据加载（sessionStorage缓存）
+  // 数据加载（后端API + sessionStorage缓存）
   useEffect(()=>{
     let dead=false
     async function load(){
+      // 先读 sessionStorage 缓存立即渲染
       try{
         const raw=sessionStorage.getItem(CACHE_KEY)
         if(raw){
@@ -257,27 +258,40 @@ export default function WorldMap() {
       }catch(e){}
       setLoading(true)
       try{
-        const BATCH=100,TOTAL=10000
         const na={},no={},nauc={},np={}
-        let cnt=0,empty=0
-        for(let s=1;s<=TOTAL&&!dead;s+=BATCH){
-          const ids=Array.from({length:Math.min(BATCH,TOTAL-s+1)},(_,i)=>s+i)
-          const[ar,or,aur]=await Promise.all([
-            pc.multicall({contracts:ids.map(id=>({address:CONTRACTS.land,abi:LAND_ABI,functionName:'resourceAttr',args:[BigInt(id)]})),allowFailure:true}),
-            pc.multicall({contracts:ids.map(id=>({address:CONTRACTS.land,abi:LAND_ABI,functionName:'ownerOf',args:[BigInt(id)]})),allowFailure:true}),
-            pc.multicall({contracts:ids.map(id=>({address:CONTRACTS.auction,abi:AUC_ABI,functionName:'auctions',args:[BigInt(id)]})),allowFailure:true}),
-          ])
-          let hit=false
-          ids.forEach((id,i)=>{
-            const own=or[i]?.result
-            if(own&&own!=='0x0000000000000000000000000000000000000000'){
-              no[id]=own; na[id]=ar[i]?.result??0n; cnt++; hit=true
+        let cnt=0
+        // 从后端 API 获取土地数据（快速，已索引）
+        let apiOk = false
+        try{
+          const res = await fetch('/api/lands')
+          if(res.ok){
+            const data = await res.json()
+            if(data.ok && data.lands?.length){
+              data.lands.forEach(({id,resources,miningSlots})=>{
+                const b = BigInt(resources[0])|(BigInt(resources[1])<<16n)|(BigInt(resources[2])<<32n)|(BigInt(resources[3])<<48n)|(BigInt(resources[4])<<64n)
+                na[id]=b; cnt++
+              })
+              setAttrs({...na}); setMinted(cnt)
+              apiOk = true
             }
+          }
+        }catch(e){ console.warn('lands API failed, fallback:', e.message) }
+        // 无论 API 是否成功，都补充读取 owner 和拍卖信息（这些变化频繁，不缓存在后端）
+        const ids = apiOk ? Object.keys(na).map(Number) : Array.from({length:300},(_,i)=>i+1)
+        const BATCH=100
+        for(let s=0;s<ids.length&&!dead;s+=BATCH){
+          const batch=ids.slice(s,s+BATCH)
+          const[or,aur]=await Promise.all([
+            pc.multicall({contracts:batch.map(id=>({address:CONTRACTS.land,abi:LAND_ABI,functionName:'ownerOf',args:[BigInt(id)]})),allowFailure:true}),
+            pc.multicall({contracts:batch.map(id=>({address:CONTRACTS.auction,abi:AUC_ABI,functionName:'auctions',args:[BigInt(id)]})),allowFailure:true}),
+          ])
+          batch.forEach((id,i)=>{
+            const own=or[i]?.result
+            if(own&&own!=='0x0000000000000000000000000000000000000000'){ no[id]=own; if(!na[id]){na[id]=0n;cnt++} }
             const auc=aur[i]?.result
             if(auc?.[4]>0n) nauc[id]={seller:auc[0],startPrice:auc[1],endPrice:auc[2],duration:auc[3],startedAt:auc[4]}
           })
-          if(!dead){setAttrs({...na});setOwners({...no});setAucs({...nauc});setMinted(cnt)}
-          if(!hit){empty++;if(empty>=2)break}else empty=0
+          if(!dead){setOwners({...no});setAucs({...nauc});setMinted(Object.keys(no).length)}
         }
         if(dead)return
         setAttrs(na);setOwners(no);setAucs(nauc);setMinted(cnt)
