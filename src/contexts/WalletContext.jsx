@@ -88,13 +88,15 @@ export function WalletProvider({ children }) {
   const [wallets, setWallets]       = useState([])
   const providerRef = useRef(null)
   const wcRef = useRef(null)
+  const addressRef = useRef('')  // 始终跟踪最新 address
 
-  // 关键修复：account 必须传入才能调用 sendTransaction
+  // 用 provider 建 walletClient（带 account）
   function makeWC(provider, addr) {
     if (!provider || !addr) return
     providerRef.current = provider
+    addressRef.current = addr
     wcRef.current = createWalletClient({
-      account: addr,          // ← 必须！否则 sendTransaction 报错
+      account: addr,
       chain: bscTestnet,
       transport: custom(provider),
     })
@@ -110,8 +112,9 @@ export function WalletProvider({ children }) {
       eth.request({method:'eth_chainId'}).then(id=>setChainId(parseInt(id,16))).catch(()=>{})
     }, 300)
     const onAcc = accs => {
-      const addr = accs?.[0]||''
+      const addr = accs?.[0] || ''
       setAddress(addr)
+      addressRef.current = addr
       if (addr && providerRef.current) makeWC(providerRef.current, addr)
     }
     const onChain = id => setChainId(parseInt(id,16))
@@ -202,8 +205,20 @@ export function useAccount() {
   return { address, isConnected, chainId, chain: isConnected ? bscTestnet : undefined }
 }
 export function useWalletClient() {
-  const { getWalletClient, isConnected } = useWallet()
-  return { data: isConnected ? getWalletClient() : null }
+  const { getWalletClient, isConnected, address } = useWallet()
+  if (!isConnected || !address) return { data: null }
+  const wc = getWalletClient()
+  if (!wc) return { data: null }
+  // 包装 sendTransaction / writeContract，自动注入 account
+  const wrapped = {
+    ...wc,
+    sendTransaction: (params) => wc.sendTransaction({ account: address, ...params }),
+    writeContract:   (params) => wc.writeContract({ account: address, ...params }),
+    signMessage:     (params) => wc.signMessage({ account: address, ...params }),
+    signTypedData:   (params) => wc.signTypedData({ account: address, ...params }),
+    account: address,
+  }
+  return { data: wrapped }
 }
 export function usePublicClient() {
   return publicClient
