@@ -12,23 +12,25 @@ import ApostlePage from './pages/ApostlePage.jsx'
 import AdminPage from './pages/AdminPage.jsx'
 import Toast from './components/Toast.jsx'
 import { ToastProvider } from './contexts/ToastContext.jsx'
+import { useAccount } from './contexts/WalletContext.jsx'
+import { DEPLOYER } from './constants/contracts'
 import './App.css'
 
-const PAGES = [
+const BASE_PAGES = [
   { id: 'map',      zh: '地图',  en: 'Map',      icon: '🌍' },
   { id: 'market',   zh: '市场',  en: 'Market',   icon: '🏛' },
   { id: 'apostle',  zh: '使徒',  en: 'Apostle',  icon: '🧙' },
   { id: 'blindbox', zh: '盲盒',  en: 'BlindBox', icon: '🎁' },
-  { id: 'farm',     zh: '农场',  en: 'Farm',     icon: '🌾' },
-  { id: 'swap',     zh: '兑换',  en: 'Swap',     icon: '🔄' },
-  { id: 'referral', zh: '邀请',  en: 'Referral', icon: '🤝' },
   { id: 'assets',   zh: '资产',  en: 'Assets',   icon: '💎' },
-  { id: 'admin',    zh: '管理',  en: 'Admin',    icon: '🛠' },
 ]
+const ADMIN_PAGE = { id: 'admin', zh: '管理', en: 'Admin', icon: '🛠' }
 
 function AppInner() {
   const [page, setPage] = useState('map')
   const [assetTab, setAssetTab] = useState('token')
+  const { address } = useAccount()
+  const isAdmin = address?.toLowerCase() === DEPLOYER?.toLowerCase()
+  const pages = isAdmin ? [...BASE_PAGES, ADMIN_PAGE] : BASE_PAGES
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -59,13 +61,13 @@ function AppInner() {
 
   return (
     <div className="app-root">
-      <TopNav pages={PAGES} current={page} onChange={setPage} />
+      <TopNav pages={pages} current={page} onChange={setPage} />
       <main className="app-main app-main-with-bottom-nav">
         <div className="fade-up" key={page} style={{ height: '100%' }}>
           {views[page]}
         </div>
       </main>
-      <BottomNav pages={PAGES} current={page} onChange={setPage} />
+      <BottomNav pages={pages} current={page} onChange={setPage} />
       <Toast />
     </div>
   )

@@ -30,16 +30,23 @@ function encodeAttr(g,w,wa,f,s){return BigInt(g)|(BigInt(w)<<16n)|(BigInt(wa)<<3
 
 async function sendTx(wc, pc, to, abi, fn, args, value) {
   const data = encodeFunctionData({ abi, functionName: fn, args })
-  for (let r = 0; r < 5; r++) {
+  for (let r = 0; r < 3; r++) {
     try {
-      const hash = await wc.sendTransaction({ to, data, ...(value?{value}:{}), gas: 3_000_000n })
+      // 先估算 gas，避免 MetaMask 低估
+      const gas = await pc.estimateGas({ account: wc.account, to, data, ...(value?{value}:{}) }).catch(() => 500_000n)
+      const gasLimit = gas * 130n / 100n  // 加30%安全边际
+      const hash = await wc.sendTransaction({ to, data, gas: gasLimit, ...(value?{value}:{}) })
+      // 等待上链确认后再继续，避免 nonce 堆积
       const receipt = await pc.waitForTransactionReceipt({ hash, timeout: 120_000 })
-      if (receipt.status === 'reverted') throw new Error('reverted')
-      await sleep(800)
+      if (receipt.status === 'reverted') throw new Error('Transaction reverted')
+      await sleep(500)
       return hash
     } catch(e) {
-      const m = (e.message||'').toLowerCase()
-      if ((m.includes('rate')||m.includes('429')||m.includes('nonce')) && r<4) { await sleep(3000*(r+1)); continue }
+      const m = (e.message || '').toLowerCase()
+      if ((m.includes('rate') || m.includes('429') || m.includes('nonce')) && r < 2) {
+        await sleep(3000 * (r + 1))
+        continue
+      }
       throw e
     }
   }
