@@ -9,11 +9,20 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      // RainbowKit 依赖 buffer
       'buffer': 'buffer',
     },
   },
   optimizeDeps: {
     include: ['buffer'],
+  },
+  server: {
+    proxy: {
+      '/evo-api': {
+        target: 'https://backend.evolution.land',
+        changeOrigin: true,
+        rewrite: path => path.replace(/^\/evo-api/, ''),
+        secure: false,
+      },
+    },
   },
 })

@@ -336,6 +336,181 @@
       "artifacts": [
         "IERC165"
       ]
+    },
+    "C:\\Users\\1\\Downloads\\evo-land-frontend-main\\evo-land-frontend-main\\contracts\\ApostleV2.sol": {
+      "lastModificationDate": 1773972712105,
+      "contentHash": "52b9f319d895a5dbc76f49e2ededfa48",
+      "sourceName": "contracts/ApostleV2.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "evmVersion": "paris",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "ApostleV2",
+        "ERC721Base",
+        "IERC721Receiver",
+        "Ownable"
+      ]
+    },
+    "C:\\Users\\1\\Downloads\\evo-land-frontend-main\\evo-land-frontend-main\\contracts\\MiningV2.sol": {
+      "lastModificationDate": 1774012186407,
+      "contentHash": "413df68211ed65f3e621b70655f8e4d1",
+      "sourceName": "contracts/MiningV2.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "evmVersion": "paris",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "IApostleNFT",
+        "IDrillNFT",
+        "IERC721Receiver",
+        "ILandNFT",
+        "IMintable",
+        "MiningSystemV2",
+        "Ownable"
+      ]
+    },
+    "C:\\Users\\1\\Downloads\\evo-land-frontend-main\\evo-land-frontend-main\\contracts\\EvoLandV2.sol": {
+      "lastModificationDate": 1774322554873,
+      "contentHash": "cab2df593a83638636d96f45241a201c",
+      "sourceName": "contracts/EvoLandV2.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "evmVersion": "paris",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "ApostleNFT",
+        "BlindBox",
+        "DrillNFT",
+        "ERC20Base",
+        "ERC721Base",
+        "FireToken",
+        "GoldToken",
+        "IERC721Receiver",
+        "IERC721Transfer",
+        "LandAuction",
+        "LandInitializer",
+        "LandNFT",
+        "MiningSystem",
+        "MintableERC20",
+        "NFTAuction",
+        "Ownable",
+        "ReferralSystem",
+        "RingToken",
+        "SoilToken",
+        "WaterToken",
+        "WoodToken"
+      ]
+    },
+    "C:\\Users\\1\\Downloads\\evo-land-frontend-main\\evo-land-frontend-main\\contracts\\NFTAuction.sol": {
+      "lastModificationDate": 1774322673195,
+      "contentHash": "3995790ca64066935c2ff5391caa0353",
+      "sourceName": "contracts/NFTAuction.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "evmVersion": "paris",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "IERC20Transfer",
+        "IERC721Transferable",
+        "NFTAuction"
+      ]
     }
   }
 }

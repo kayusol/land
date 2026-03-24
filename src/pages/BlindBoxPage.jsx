@@ -1,199 +1,116 @@
-import { useState } from 'react'
-import {
-  useAccount,
-  useReadContract,
-  useWriteContract,
-  useWaitForTransactionReceipt,
-} from 'wagmi'
-import { formatEther } from 'viem'
+import { useState, useEffect } from 'react'
+import { usePublicClient, useAccount, useWalletClient } from 'wagmi'
+import { formatEther, encodeFunctionData } from 'viem'
 import { CONTRACTS } from '../constants/contracts'
-import { BLINDBOX_ABI, ERC20_ABI } from '../constants/abi'
+import { APO_EGG_GIF, drillImgUrl, ELEM_SVGS, ELEMS } from '../constants/images'
 import './BlindBoxPage.css'
 
-const ELEM_NAMES = ['⛏️金', '🪵木', '💧水', '🔥火', '🪨土']
+const BB_ABI=[
+  {type:'function',name:'apostleBoxPrice',inputs:[],outputs:[{type:'uint256'}],stateMutability:'view'},
+  {type:'function',name:'drillBoxPrice',inputs:[],outputs:[{type:'uint256'}],stateMutability:'view'},
+  {type:'function',name:'buyApostleBox',inputs:[],outputs:[],stateMutability:'nonpayable'},
+  {type:'function',name:'buyDrillBox',inputs:[],outputs:[],stateMutability:'nonpayable'},
+  {type:'event',name:'ApostleBorn',inputs:[{indexed:true,name:'tokenId',type:'uint256'},{name:'strength',type:'uint8'},{name:'element',type:'uint8'}]},
+  {type:'event',name:'DrillForged',inputs:[{indexed:true,name:'tokenId',type:'uint256'},{name:'tier',type:'uint8'},{name:'affinity',type:'uint8'}]},
+]
+const ERC20_ABI=[
+  {type:'function',name:'approve',inputs:[{name:'s',type:'address'},{name:'a',type:'uint256'}],outputs:[{type:'bool'}],stateMutability:'nonpayable'},
+  {type:'function',name:'balanceOf',inputs:[{name:'a',type:'address'}],outputs:[{type:'uint256'}],stateMutability:'view'},
+]
 
-function BoxCard({ type, price, onBuy, buying, lastResult }) {
-  const isApostle = type === 'apostle'
-  return (
-    <div className={`box-card ${type}`}>
-      <div className="box-glow" />
-      <div className="box-icon">{isApostle ? '👤' : '⚙️'}</div>
-      <div className="box-name">{isApostle ? '使徒盲盒' : '钻头盲盒'}</div>
-      <div className="box-desc">
-        {isApostle
-          ? '随机获得一名使徒 NFT\n力量 1–100，元素随机'
-          : '随机获得一个钻头 NFT\n等级 1–5，亲和随机'}
+function ElemIcon({i,size=14}){return <img src={ELEM_SVGS[i]} alt={ELEMS[i].name} style={{width:size,height:size,verticalAlign:'middle',marginRight:2}}/>}
+
+function BoxCard({type,price,loading,onBuy}){
+  const isApo=type==='apostle'
+  const imgSrc=isApo?APO_EGG_GIF:drillImgUrl(2,3)
+  return(
+    <div className={`bb-card ${type}`}>
+      <div className="bb-card-glow"/>
+      <div className="bb-img-wrap">
+        <img src={imgSrc} alt={type} className="bb-img"/>
+        <div style={{position:'absolute',top:8,right:8,background:'rgba(0,0,0,.6)',borderRadius:6,padding:'2px 7px',fontSize:'.65rem',color:'#c090ff'}}>🔒 盲盒</div>
       </div>
-      <div className="box-price">
-        <span className="price-label">价格</span>
-        <span className="price-val">{price ? parseFloat(formatEther(price)).toFixed(2) : '…'} RING</span>
+      <div className="bb-name">{isApo?'🧙 使徒盲盒':'⛏️ 钻头盲盒'}</div>
+      <div className="bb-desc">{isApo?'购买后存入钱包\n去「资产→使徒」查看并开启':'购买后存入钱包\n去「资产→钻头」查看并开启'}</div>
+      <div className="bb-price-row">
+        <span className="bb-price-label">价格</span>
+        <span className="bb-price-val">{price?Number(formatEther(price)).toFixed(2):'…'} RING</span>
       </div>
-
-      {lastResult && (
-        <div className="box-result">
-          ✅ 获得 #{lastResult.tokenId} —
-          {isApostle
-            ? ` 力量 ${lastResult.attr1}，${ELEM_NAMES[lastResult.attr2] ?? '?'}`
-            : ` ${'★'.repeat(lastResult.attr1)}${'☆'.repeat(5 - lastResult.attr1)}，${ELEM_NAMES[lastResult.attr2] ?? '?'}`}
-        </div>
-      )}
-
-      <div className="box-btns">
-        <button
-          className="buy-btn single"
-          onClick={() => onBuy(type, 1)}
-          disabled={buying === type + '1'}
-        >
-          {buying === type + '1' ? '开启中…' : '购买 × 1'}
-        </button>
-        <button
-          className="buy-btn batch"
-          onClick={() => onBuy(type, 5)}
-          disabled={buying === type + '5'}
-        >
-          {buying === type + '5' ? '开启中…' : '购买 × 5'}
-        </button>
+      <button className="bb-buy-btn" onClick={onBuy} disabled={loading||!price}>
+        {loading?'购买中...':'🎁 购买盲盒'}
+      </button>
+      <div style={{fontSize:'.65rem',color:'#4030a0',textAlign:'center',marginTop:6}}>
+        购买后 NFT 直接到你的钱包，去资产页查看
       </div>
     </div>
   )
 }
 
-export default function BlindBoxPage() {
-  const { address, isConnected } = useAccount()
-  const [buying, setBuying] = useState(null)
-  const [results, setResults] = useState({})
-  const [txHash, setTxHash] = useState(null)
+export default function BlindBoxPage(){
+  const pc=usePublicClient(),{address}=useAccount(),{data:wc}=useWalletClient()
+  const [apoPx,setApoPx]=useState(null)
+  const [drlPx,setDrlPx]=useState(null)
+  const [buying,setBuying]=useState(null)
+  const [msg,setMsg]=useState('')
 
-  const { writeContractAsync } = useWriteContract()
-  const { isSuccess } = useWaitForTransactionReceipt({ hash: txHash })
+  useEffect(()=>{
+    if(!pc)return
+    Promise.all([
+      pc.readContract({address:CONTRACTS.blindbox,abi:BB_ABI,functionName:'apostleBoxPrice'}).catch(()=>null),
+      pc.readContract({address:CONTRACTS.blindbox,abi:BB_ABI,functionName:'drillBoxPrice'}).catch(()=>null),
+    ]).then(([a,d])=>{setApoPx(a);setDrlPx(d)})
+  },[pc])
 
-  const { data: apostlePrice } = useReadContract({
-    address: CONTRACTS.blindbox,
-    abi: BLINDBOX_ABI,
-    functionName: 'apostleBoxPrice',
-  })
-  const { data: drillPrice } = useReadContract({
-    address: CONTRACTS.blindbox,
-    abi: BLINDBOX_ABI,
-    functionName: 'drillBoxPrice',
-  })
-
-  async function handleBuy(type, count) {
-    if (!address) return alert('请先连接钱包')
-    const key = type + count
-    setBuying(key)
-    try {
-      const price = type === 'apostle' ? apostlePrice : drillPrice
-      const totalCost = price * BigInt(count)
-
-      // 1. Approve RING
-      await writeContractAsync({
-        address: CONTRACTS.ring,
-        abi: ERC20_ABI,
-        functionName: 'approve',
-        args: [CONTRACTS.blindbox, totalCost],
-      })
-
-      // 2. Buy box
-      let tx
-      if (count === 1) {
-        tx = await writeContractAsync({
-          address: CONTRACTS.blindbox,
-          abi: BLINDBOX_ABI,
-          functionName: type === 'apostle' ? 'buyApostleBox' : 'buyDrillBox',
-          args: [],
-        })
-      } else {
-        tx = await writeContractAsync({
-          address: CONTRACTS.blindbox,
-          abi: BLINDBOX_ABI,
-          functionName: type === 'apostle' ? 'buyApostleBoxBatch' : 'buyDrillBoxBatch',
-          args: [BigInt(count)],
-        })
-      }
-      setTxHash(tx)
-      setResults(p => ({ ...p, [type]: { tokenId: '?', attr1: '?', attr2: 0 } }))
-    } catch (e) {
-      alert(e.shortMessage || e.message)
-    } finally {
-      setBuying(null)
-    }
+  async function buyBox(type){
+    if(!wc||!address){alert('请先连接钱包');return}
+    const price=type==='apostle'?apoPx:drlPx
+    if(!price)return
+    setBuying(type);setMsg('授权 RING...')
+    try{
+      // 1. approve
+      const appData=encodeFunctionData({abi:ERC20_ABI,functionName:'approve',args:[CONTRACTS.blindbox,price]})
+      const h1=await wc.sendTransaction({to:CONTRACTS.ring,data:appData})
+      await pc.waitForTransactionReceipt({hash:h1})
+      setMsg('购买中...')
+      // 2. buy — NFT 铸造到钱包，不在这里解析结果
+      const buyFn=type==='apostle'?'buyApostleBox':'buyDrillBox'
+      const buyData=encodeFunctionData({abi:BB_ABI,functionName:buyFn,args:[]})
+      const h2=await wc.sendTransaction({to:CONTRACTS.blindbox,data:buyData})
+      await pc.waitForTransactionReceipt({hash:h2})
+      setMsg('✅ 购买成功！NFT 已存入钱包，3秒后跳转资产页...')
+      setTimeout(()=>{
+        window.dispatchEvent(new CustomEvent('nav',{detail:{page:'assets',tab:type==='apostle'?'apostle':'drill'}}))
+        setMsg('')
+      },3000)
+    }catch(e){setMsg('❌ '+(e.shortMessage||e.message))}
+    finally{setBuying(null)}
   }
 
-  return (
-    <div className="blindbox-page">
+  return(
+    <div className="bb-root">
       <div className="bb-header">
-        <h2>🎁 神秘盲盒</h2>
-        <p>使用 RING 开启盲盒，随机获得使徒或钻头 NFT</p>
+        <h1 className="bb-title">🎁 神秘盲盒</h1>
+        <p className="bb-subtitle">购买后 NFT 直接铸造到你的钱包 · 去「资产」页查看和挂卖</p>
       </div>
-
-      {!isConnected && (
-        <div className="connect-prompt">请先连接钱包</div>
-      )}
-
-      {isConnected && (
-        <div className="bb-grid">
-          <BoxCard
-            type="apostle"
-            price={apostlePrice}
-            onBuy={handleBuy}
-            buying={buying}
-            lastResult={results.apostle}
-          />
-          <BoxCard
-            type="drill"
-            price={drillPrice}
-            onBuy={handleBuy}
-            buying={buying}
-            lastResult={results.drill}
-          />
+      {!address&&<div className="bb-warn">⚠️ 请先连接钱包</div>}
+      {msg&&<div className="bb-msg">{msg}</div>}
+      <div className="bb-cards">
+        <BoxCard type="apostle" price={apoPx} loading={buying==='apostle'} onBuy={()=>buyBox('apostle')}/>
+        <BoxCard type="drill"   price={drlPx} loading={buying==='drill'}   onBuy={()=>buyBox('drill')}/>
+      </div>
+      <div className="bb-odds">
+        <div className="bb-odds-title">📊 概率说明</div>
+        <div className="bb-odds-grid">
+          {ELEMS.map((el,i)=>(
+            <div key={i} className="bb-odds-item">
+              <ElemIcon i={i} size={16}/><span style={{color:el.color}}>{el.name}系</span><span>20%</span>
+            </div>
+          ))}
         </div>
-      )}
-
-      <div className="bb-info">
-        <div className="bb-info-card">
-          <h3>📋 合约信息</h3>
-          <div className="info-row">
-            <span>BlindBox 合约</span>
-            <a href={`https://testnet.bscscan.com/address/${CONTRACTS.blindbox}`} target="_blank" rel="noreferrer">
-              {CONTRACTS.blindbox.slice(0, 8)}…{CONTRACTS.blindbox.slice(-6)}
-            </a>
-          </div>
-          <div className="info-row">
-            <span>RING 合约</span>
-            <a href={`https://testnet.bscscan.com/address/${CONTRACTS.ring}`} target="_blank" rel="noreferrer">
-              {CONTRACTS.ring.slice(0, 8)}…{CONTRACTS.ring.slice(-6)}
-            </a>
-          </div>
-        </div>
-
-        <div className="bb-info-card">
-          <h3>🎲 概率说明</h3>
-          <div className="prob-grid">
-            <div className="prob-item">
-              <span className="prob-label">使徒力量</span>
-              <span className="prob-val">1 ~ 100 均匀随机</span>
-            </div>
-            <div className="prob-item">
-              <span className="prob-label">钻头等级</span>
-              <span className="prob-val">⭐×1~5 均匀随机</span>
-            </div>
-            <div className="prob-item">
-              <span className="prob-label">元素属性</span>
-              <span className="prob-val">⛏️木💧🔥🪨 各20%</span>
-            </div>
-          </div>
+        <div style={{fontSize:'.72rem',color:'#4030a0',marginTop:.6+'rem'}}>
+          使徒力量 1-100 均匀分布 · 钻头 1-5星 各20%
         </div>
       </div>
-
-      {txHash && (
-        <div className="bb-tx">
-          最近交易：
-          <a href={`https://testnet.bscscan.com/tx/${txHash}`} target="_blank" rel="noreferrer">
-            {txHash.slice(0, 12)}… 查看 ↗
-          </a>
-        </div>
-      )}
     </div>
   )
 }

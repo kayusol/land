@@ -105,3 +105,24 @@
   .top-nav { padding: 0 10px; }
   .nav-logo-sub { display: none; }
 }
+
+/* 钱包连接按钮 */
+.nav-connect-btn {
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--primary);
+  font-family: inherit;
+  font-size: .78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .2s;
+  letter-spacing: .02em;
+  white-space: nowrap;
+}
+.nav-connect-btn:hover { border-color: var(--primary); background: var(--primary)22; }
+.nav-connect-btn.connected { color: var(--green); border-color: var(--green)66; }
+.nav-connect-btn.connected:hover { background: var(--green)15; }
+.nav-connect-btn.warn { color: #f59e0b; border-color: #f59e0b66; animation: pulse .8s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.6} }

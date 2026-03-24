@@ -1,11 +1,14 @@
-import { getDefaultConfig } from '@rainbow-me/rainbowkit'
-import { http } from 'wagmi'
+import { createConfig, http } from 'wagmi'
+import { injected } from 'wagmi/connectors'
 
 export const bscTestnet = {
   id: 97,
   name: 'BSC 测试网',
   nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
-  rpcUrls: { default: { http: ['https://bsc-testnet-rpc.publicnode.com'] } },
+  rpcUrls: {
+    default: { http: ['https://bsc-testnet-rpc.publicnode.com'] },
+    public:  { http: ['https://bsc-testnet-rpc.publicnode.com'] },
+  },
   blockExplorers: { default: { name: 'BscScan', url: 'https://testnet.bscscan.com' } },
   contracts: {
     multicall3: {
@@ -16,10 +19,8 @@ export const bscTestnet = {
   testnet: true,
 }
 
-export const wagmiConfig = getDefaultConfig({
-  appName: '进化星球 BSC',
-  projectId: 'evo-land-bsc-demo',
+export const wagmiConfig = createConfig({
   chains: [bscTestnet],
-  transports: { [bscTestnet.id]: http() },
-  ssr: false,
+  connectors: [injected()],
+  transports: { [bscTestnet.id]: http('https://bsc-testnet-rpc.publicnode.com') },
 })

@@ -1,5 +1,30 @@
 import React from 'react'
-import { ConnectButton } from '@rainbow-me/rainbowkit'
+import { useAccount, useConnect, useDisconnect, useSwitchChain } from 'wagmi'
+import { bscTestnet } from '../config/wagmi.js'
+
+function WalletBtn() {
+  const { address, isConnected, chainId } = useAccount()
+  const { connect, connectors } = useConnect()
+  const { disconnect } = useDisconnect()
+  const { switchChain } = useSwitchChain()
+  const isRight = chainId === bscTestnet.id
+  const short = a => a ? a.slice(0,6)+'…'+a.slice(-4) : ''
+  if (!isConnected) return (
+    <button onClick={()=>connect({connector:connectors[0]})} style={{padding:'5px 14px',borderRadius:4,border:'1px solid var(--primary)',background:'none',color:'var(--primary)',fontFamily:'inherit',fontSize:11,cursor:'pointer',letterSpacing:'.08em'}}>
+      连接钱包
+    </button>
+  )
+  if (!isRight) return (
+    <button onClick={()=>switchChain({chainId:bscTestnet.id})} style={{padding:'5px 14px',borderRadius:4,border:'1px solid #f59e0b',background:'none',color:'#f59e0b',fontFamily:'inherit',fontSize:11,cursor:'pointer'}}>
+      ⚠ 切换BSC
+    </button>
+  )
+  return (
+    <button onClick={()=>disconnect()} title="点击断开" style={{padding:'5px 14px',borderRadius:4,border:'1px solid var(--green)',background:'none',color:'var(--green)',fontFamily:'inherit',fontSize:11,cursor:'pointer'}}>
+      {short(address)}
+    </button>
+  )
+}
 
 export default function Header({ pages, current, onChange }) {
   return (
@@ -45,13 +70,8 @@ export default function Header({ pages, current, onChange }) {
         ))}
       </nav>
 
-      {/* RainbowKit connect */}
       <div style={{display:'flex',alignItems:'center',gap:10}}>
-        <ConnectButton
-          chainStatus="icon"
-          showBalance={false}
-          accountStatus={{ smallScreen:'avatar', largeScreen:'full' }}
-        />
+        <WalletBtn />
       </div>
     </header>
   )
