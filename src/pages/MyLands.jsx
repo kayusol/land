@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
-import { useAccount, usePublicClient, useWalletClient } from 'wagmi'
+import { useAccount, usePublicClient, useWalletClient } from '../contexts/WalletContext.jsx'
+
 import { parseEther, getContract } from 'viem'
 import { CONTRACTS, RES_EMOJIS, RES_COLORS, LAND_COLORS, RES_NAMES_ZH, isDeployed } from '../constants/contracts.js'
 import { LAND_ABI, AUCTION_ABI } from '../constants/abi.js'

@@ -1,4 +1,5 @@
-import { useReadContracts, useAccount } from 'wagmi'
+import { useReadContracts } from 'wagmi'
+import { useAccount } from '../contexts/WalletContext.jsx'
 import { CONTRACTS } from '../constants/contracts'
 import { LAND_ABI, DRILL_ABI, APOSTLE_ABI } from '../constants/abi'
 

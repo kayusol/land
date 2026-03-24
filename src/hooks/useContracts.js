@@ -1,5 +1,6 @@
-import { usePublicClient, useWalletClient, useAccount } from 'wagmi'
+
 import { getContract } from 'viem'
+import { usePublicClient, useWalletClient, useAccount } from '../contexts/WalletContext.jsx'
 import { CONTRACTS } from '../constants/contracts'
 import {
   ERC20_ABI, LAND_ABI, DRILL_ABI, APOSTLE_ABI,

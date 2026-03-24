@@ -4,7 +4,8 @@
  *
  * Reads tokenIds 1-20 (the genesis auctions) and returns active ones.
  */
-import { useReadContracts, useWriteContract, useAccount } from 'wagmi'
+import { useReadContracts, useWriteContract } from 'wagmi'
+import { useAccount } from '../contexts/WalletContext.jsx'
 import { parseUnits, formatUnits } from 'viem'
 import { CONTRACTS } from '../constants/contracts'
 import { AUCTION_ABI, ERC20_ABI } from '../constants/abi'

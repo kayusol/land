@@ -2,7 +2,8 @@
  * useMining — start/stop mining and claim rewards for a land parcel
  * Returns: { pendingRewards, startMining, stopMining, claim, slotCount }
  */
-import { useReadContracts, useWriteContract, useAccount } from 'wagmi'
+import { useReadContracts, useWriteContract } from 'wagmi'
+import { useAccount } from '../contexts/WalletContext.jsx'
 import { formatUnits } from 'viem'
 import { CONTRACTS } from '../constants/contracts'
 import { MINING_ABI, LAND_ABI, DRILL_ABI, APOSTLE_ABI } from '../constants/abi'

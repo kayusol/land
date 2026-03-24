@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { usePublicClient, useAccount, useWalletClient } from 'wagmi'
+
 import { formatEther, encodeFunctionData } from 'viem'
 import { CONTRACTS } from '../constants/contracts'
 import { APO_EGG_GIF, drillImgUrl, ELEM_SVGS, ELEMS } from '../constants/images'

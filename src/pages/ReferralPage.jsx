@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { useAccount, useReadContracts, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
+import { useAccount } from '../contexts/WalletContext.jsx'
+import { useReadContracts, useWriteContract, useWaitForTransactionReceipt } from 'wagmi'
 import { CONTRACTS, RESOURCE_TOKENS } from '../constants/contracts'
 import { REFERRAL_ABI } from '../constants/abi'
 import { formatEther } from 'viem'

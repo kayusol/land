@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
-import { usePublicClient, useAccount, useWalletClient } from 'wagmi'
+import { usePublicClient, useAccount, useWalletClient } from '../contexts/WalletContext.jsx'
+
 import { formatEther, encodeFunctionData, parseEther } from 'viem'
 import { CONTRACTS, NFT_AUCTION_ADDR } from '../constants/contracts'
 import { APO_EGG_GIF, drillImgUrl, landImgUrl, ELEM_SVGS, ELEMS, RING_SVG } from '../constants/images'

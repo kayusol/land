@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
-import { useAccount, useWalletClient, usePublicClient } from 'wagmi'
+import { useAccount, useWalletClient, usePublicClient } from '../contexts/WalletContext.jsx'
+
 import { parseEther, encodeFunctionData } from 'viem'
 import { CONTRACTS, NFT_AUCTION_ADDR, DEPLOYER } from '../constants/contracts'
 import './AdminPage.css'

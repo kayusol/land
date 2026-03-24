@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi'
+import { useAccount } from '../contexts/WalletContext.jsx'
+import { useWriteContract, useWaitForTransactionReceipt, useReadContract } from 'wagmi'
 import { parseEther, formatEther, parseUnits } from 'viem'
 import { CONTRACTS, PANCAKE_ROUTER, WBNB } from '../constants/contracts'
 import { ERC20_ABI } from '../constants/abi'

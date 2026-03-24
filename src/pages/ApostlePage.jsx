@@ -1,6 +1,7 @@
 // src/pages/ApostlePage.jsx — 使徒详情+繁殖系统
 import { useState, useEffect, useCallback } from 'react'
-import { usePublicClient, useAccount, useWalletClient } from 'wagmi'
+import { usePublicClient, useAccount, useWalletClient } from '../contexts/WalletContext.jsx'
+
 import { formatEther, encodeFunctionData } from 'viem'
 import { CONTRACTS } from '../constants/contracts'
 import { APO_EGG_GIF, ELEM_SVGS, ELEMS } from '../constants/images'
