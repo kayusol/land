@@ -135,6 +135,18 @@ contract LandNFT is ERC721Base {
         if (operators[msg.sender]) { _xfer(f,t,id); _chk(msg.sender,f,t,id,d); }
         else super.safeTransferFrom(f,t,id,d);
     }
+
+    // ── 地块属性充能（仅升级合约可调用）────────────────────────────
+    function upgradeAttr(uint256 id, uint8 res, uint16 addVal) external onlyOperator {
+        require(ownerOf[id] != address(0), "!exist");
+        uint80 attr = resourceAttr[id];
+        uint80 curVal = uint80(attr >> (uint256(res)*16)) & 0xffff;
+        uint80 newVal = curVal + addVal;
+        if (newVal > 0xffff) newVal = 0xffff;
+        // 清除对应16位，写入新值
+        uint80 mask = ~(uint80(0xffff) << (uint80(res)*16));
+        resourceAttr[id] = (attr & mask) | (newVal << (uint80(res)*16));
+    }
 }
 
 // ── Drill NFT ────────────────────────────────────────────────────────────────
@@ -158,6 +170,12 @@ contract DrillNFT is ERC721Base {
     function safeTransferFrom(address f, address t, uint256 id, bytes memory d) public override {
         if (operators[msg.sender]) { _xfer(f,t,id); _chk(msg.sender,f,t,id,d); }
         else super.safeTransferFrom(f,t,id,d);
+    }
+
+    // ── 升级合约调用：销毁钻头 ──────────────────────────────────
+    function burn(uint256 id) external onlyOperator {
+        require(ownerOf[id] != address(0), "!exist");
+        _burn(id);
     }
 }
 
@@ -214,6 +232,12 @@ contract ApostleNFT is ERC721Base {
     function safeTransferFrom(address f,address t,uint256 id,bytes memory d) public override {
         if(operators[msg.sender]){_xfer(f,t,id);_chk(msg.sender,f,t,id,d);}
         else super.safeTransferFrom(f,t,id,d);
+    }
+
+    // ── 升级合约调用：提升使徒力量 ────────────────────────────
+    function upgradeStrength(uint256 id, uint8 newStrength) external onlyOperator {
+        require(attrs[id].birthTime > 0, "!exist");
+        attrs[id].strength = newStrength;
     }
 }
 

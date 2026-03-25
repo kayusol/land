@@ -1,0 +1,39 @@
+/* RentalPage.css */
+.rp-root { padding: 16px; max-width: 900px; margin: 0 auto; }
+.rp-header { margin-bottom: 20px; }
+.rp-title { font-size: 1.4rem; font-weight: 700; color: #c090ff; margin: 0 0 4px 0; }
+.rp-subtitle { font-size: .78rem; color: #5040a0; }
+
+.rp-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+.rp-tab { padding: .4rem .9rem; border-radius: 20px; font-size: .8rem; border: 1px solid #2a1a5a; background: transparent; color: #7060a0; cursor: pointer; }
+.rp-tab.on { background: #2a1a5a; color: #c090ff; border-color: #4a2a9a; }
+
+.rp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.rp-card { background: #0f0a1e; border: 1px solid #1a1040; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+.rp-card-title { font-size: .9rem; font-weight: 700; color: #c090ff; }
+.rp-card-info { font-size: .72rem; color: #5040a0; line-height: 1.7; }
+.rp-card-status { font-size: .72rem; font-weight: 600; }
+.rp-card-status.available { color: #52c462; }
+.rp-card-status.rented { color: #f0c040; }
+
+.rp-form { display: flex; flex-direction: column; gap: 10px; }
+.rp-label { font-size: .75rem; color: #5040a0; margin-bottom: 4px; }
+.rp-input { background: #0a0818; border: 1px solid #2a1a5a; border-radius: 8px; color: #c0b0e0; padding: .5rem .8rem; font-size: .85rem; width: 100%; box-sizing: border-box; }
+
+.rp-btn { padding: .45rem 1rem; border-radius: 8px; font-size: .82rem; cursor: pointer; border: none; font-weight: 600; }
+.rp-btn:disabled { opacity: .4; cursor: not-allowed; }
+.rp-btn-primary { background: linear-gradient(135deg, #1a4a2a, #2a7a3a); color: #80e090; }
+.rp-btn-danger { background: #2a0a0a; color: #f06060; border: 1px solid #4a1a1a; }
+.rp-btn-secondary { background: #1a1040; color: #7060a0; border: 1px solid #2a1a5a; }
+
+.rp-msg { font-size: .78rem; padding: 8px 12px; border-radius: 8px; background: #0a0818; margin: 8px 0; }
+.rp-msg.ok { color: #52c462; border: 1px solid #1a4a2a; }
+.rp-msg.err { color: #f06070; border: 1px solid #4a1a2a; }
+
+.rp-empty { text-align: center; padding: 40px; color: #3a2a6a; font-size: .9rem; }
+
+.rp-section { background: #0f0a1e; border: 1px solid #1a1040; border-radius: 12px; padding: 16px; margin-bottom: 14px; }
+.rp-section-title { font-size: .9rem; font-weight: 700; color: #a080ee; margin: 0 0 12px 0; }
+.rp-desc { font-size: .75rem; color: #4a3a7a; line-height: 1.6; margin-bottom: 12px; }
+
+.rp-timer { display: inline-flex; align-items: center; gap: 4px; font-size: .72rem; background: #0a1020; border: 1px solid #1a2a4a; border-radius: 6px; padding: 3px 8px; color: #55aaff; }

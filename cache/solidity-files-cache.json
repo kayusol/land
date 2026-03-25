@@ -419,8 +419,8 @@
       ]
     },
     "C:\\Users\\1\\Downloads\\evo-land-frontend-main\\evo-land-frontend-main\\contracts\\EvoLandV2.sol": {
-      "lastModificationDate": 1774322554873,
-      "contentHash": "cab2df593a83638636d96f45241a201c",
+      "lastModificationDate": 1774402716988,
+      "contentHash": "a147eedfe817228e6ad43010056d5c2a",
       "sourceName": "contracts/EvoLandV2.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -510,6 +510,86 @@
         "IERC20Transfer",
         "IERC721Transferable",
         "NFTAuction"
+      ]
+    },
+    "C:\\Users\\1\\Downloads\\evo-land-frontend-main\\evo-land-frontend-main\\contracts\\LandRental.sol": {
+      "lastModificationDate": 1774402688317,
+      "contentHash": "4a12a9bf5195ecbeaf90c676490c6036",
+      "sourceName": "contracts/LandRental.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "evmVersion": "paris",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "IERC20Rental",
+        "ILandRental",
+        "LandRental",
+        "Ownable"
+      ]
+    },
+    "C:\\Users\\1\\Downloads\\evo-land-frontend-main\\evo-land-frontend-main\\contracts\\UpgradeSystem.sol": {
+      "lastModificationDate": 1774402646798,
+      "contentHash": "8e241a5a35232359a0c6f809c0b8f36d",
+      "sourceName": "contracts/UpgradeSystem.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "evmVersion": "paris",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "IApostleUpgrade",
+        "IDrillUpgrade",
+        "IERC20Burn",
+        "ILandUpgrade",
+        "Ownable",
+        "UpgradeSystem"
       ]
     }
   }

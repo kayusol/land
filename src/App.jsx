@@ -10,6 +10,8 @@ import ReferralPage from './pages/ReferralPage.jsx'
 import BlindBoxPage from './pages/BlindBoxPage.jsx'
 import ApostlePage from './pages/ApostlePage.jsx'
 import AdminPage from './pages/AdminPage.jsx'
+import UpgradePage from './pages/UpgradePage.jsx'
+import RentalPage from './pages/RentalPage.jsx'
 import Toast from './components/Toast.jsx'
 import { ToastProvider } from './contexts/ToastContext.jsx'
 import { useAccount } from './contexts/WalletContext.jsx'
@@ -22,6 +24,8 @@ const BASE_PAGES = [
   { id: 'apostle',  zh: '使徒',  en: 'Apostle',  icon: '🧙' },
   { id: 'blindbox', zh: '盲盒',  en: 'BlindBox', icon: '🎁' },
   { id: 'assets',   zh: '资产',  en: 'Assets',   icon: '💎' },
+  { id: 'upgrade',  zh: '升级',  en: 'Upgrade',  icon: '⬆️' },
+  { id: 'rental',   zh: '租赁',  en: 'Rental',   icon: '🏘' },
   { id: 'swap',     zh: '兑换',  en: 'Swap',     icon: '🔄' },
 ]
 const ADMIN_PAGES = [
@@ -61,6 +65,8 @@ function AppInner() {
     swap:     <SwapPage />,
     referral: <ReferralPage />,
     assets:   <AssetsPage initialTab={assetTab} />,
+    upgrade:  <UpgradePage />,
+    rental:   <RentalPage />,
     admin:    <AdminPage />,
   }
 

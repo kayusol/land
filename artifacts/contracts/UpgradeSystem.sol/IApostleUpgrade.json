@@ -1,0 +1,107 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "IApostleUpgrade",
+  "sourceName": "contracts/UpgradeSystem.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "id",
+          "type": "uint256"
+        }
+      ],
+      "name": "attrs",
+      "outputs": [
+        {
+          "internalType": "uint8",
+          "name": "strength",
+          "type": "uint8"
+        },
+        {
+          "internalType": "uint8",
+          "name": "element",
+          "type": "uint8"
+        },
+        {
+          "internalType": "uint8",
+          "name": "gender",
+          "type": "uint8"
+        },
+        {
+          "internalType": "uint16",
+          "name": "gen",
+          "type": "uint16"
+        },
+        {
+          "internalType": "uint64",
+          "name": "genes",
+          "type": "uint64"
+        },
+        {
+          "internalType": "uint64",
+          "name": "birthTime",
+          "type": "uint64"
+        },
+        {
+          "internalType": "uint64",
+          "name": "cooldown",
+          "type": "uint64"
+        },
+        {
+          "internalType": "uint32",
+          "name": "motherId",
+          "type": "uint32"
+        },
+        {
+          "internalType": "uint32",
+          "name": "fatherId",
+          "type": "uint32"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "id",
+          "type": "uint256"
+        }
+      ],
+      "name": "ownerOf",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "id",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint8",
+          "name": "newStrength",
+          "type": "uint8"
+        }
+      ],
+      "name": "upgradeStrength",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}
