@@ -150,15 +150,28 @@ export default function BlindBoxPage(){
 
       <div className="bb-odds">
         <div className="bb-odds-title">📊 概率说明</div>
-        <div className="bb-odds-grid">
-          {ELEMS.map((el,i)=>(
-            <div key={i} className="bb-odds-item">
-              <ElemIcon i={i} size={16}/><span style={{color:el.color}}>{el.name}系</span><span>20%</span>
-            </div>
-          ))}
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0.6rem 1.5rem',margin:'.5rem 0'}}>
+          <div>
+            <div style={{fontSize:'.72rem',color:'#a080ee',fontWeight:700,marginBottom:4}}>🧙 使徒稀有度</div>
+            {[['新手','1-30力量','30%','#888899'],['普通','31-60力量','55%','#cc99ff'],['精英','61-84力量','13%','#55aaff'],['传奇','85-100力量','2%','#ffcc44']].map(([name,range,prob,color])=>(
+              <div key={name} style={{display:'flex',justifyContent:'space-between',fontSize:'.7rem',padding:'2px 0',borderBottom:'1px solid #1a1040'}}>
+                <span style={{color}}>{name} <span style={{color:'#5040a0'}}>{range}</span></span>
+                <span style={{color,fontWeight:700}}>{prob}</span>
+              </div>
+            ))}
+          </div>
+          <div>
+            <div style={{fontSize:'.72rem',color:'#a080ee',fontWeight:700,marginBottom:4}}>⛏️ 钻头星级</div>
+            {[['1星','⭐','35%'],['2星','⭐⭐','30%'],['3星','⭐⭐⭐','20%'],['4星','⭐⭐⭐⭐','10%'],['5星','⭐⭐⭐⭐⭐','5%']].map(([name,stars,prob])=>(
+              <div key={name} style={{display:'flex',justifyContent:'space-between',fontSize:'.7rem',padding:'2px 0',borderBottom:'1px solid #1a1040'}}>
+                <span style={{color:'#c090ff'}}>{name} <span style={{color:'#f0c040',fontSize:'.65rem'}}>{stars}</span></span>
+                <span style={{color:'#c090ff',fontWeight:700}}>{prob}</span>
+              </div>
+            ))}
+          </div>
         </div>
-        <div style={{fontSize:'.72rem',color:'#4030a0',marginTop:.6+'rem'}}>
-          使徒力量 1-100 均匀分布 · 钻头 1-5星 各20%
+        <div style={{fontSize:'.68rem',color:'#3a2860',marginTop:'.5rem',textAlign:'center'}}>
+          五种元素各占 20% · 高稀有度不保底
         </div>
       </div>
     </div>

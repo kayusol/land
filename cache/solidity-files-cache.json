@@ -419,8 +419,8 @@
       ]
     },
     "C:\\Users\\1\\Downloads\\evo-land-frontend-main\\evo-land-frontend-main\\contracts\\EvoLandV2.sol": {
-      "lastModificationDate": 1774402716988,
-      "contentHash": "a147eedfe817228e6ad43010056d5c2a",
+      "lastModificationDate": 1774403783813,
+      "contentHash": "eccae7739ce745ba3bf8983ccfc93ef1",
       "sourceName": "contracts/EvoLandV2.sol",
       "solcConfig": {
         "version": "0.8.20",

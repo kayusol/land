@@ -194,7 +194,7 @@ function BlindBoxTab({pc, address, wc}){
           <span style={{color:'#9080b0',fontSize:'.8rem'}}>购买数量：</span>
           {[1,5,10].map(n=><button key={n} className={`bb-count-btn${count===n?' on':''}`} onClick={()=>setCount(n)}>{n}个</button>)}
         </div>
-        {[['apostle','🧙 使徒盲盒','随机元素 · 力量1-100',apoPx,`${GH}/apostle/egg.gif`],['drill','⛏️ 钻头盲盒','随机亲和 · 1-5星',drlPx,drillImgUrl(2,3)]].map(([type,name,desc,px,img])=>(
+        {[['apostle','🧙 使徒盲盒','新手30% · 普通55% · 精英13% · 传奇2%',apoPx,`${GH}/apostle/egg.gif`],['drill','⛏️ 钻头盲盒','1星35% · 2星30% · 3星20% · 4星10% · 5星5%',drlPx,drillImgUrl(2,3)]].map(([type,name,desc,px,img])=>(
           <div key={type} className={`bb-asset-card ${type}`}>
             <div className="bb-asset-img-wrap"><img src={img} alt={type} className="bb-asset-img"/></div>
             <div className="bb-asset-info">

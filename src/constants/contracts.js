@@ -12,7 +12,7 @@ export const CONTRACTS = {
   auction:     '0xfACc3eaD5EA9Ec5F2fe56568918b21Fb3b899284',
   initializer: '0x43Fb229f526CB3F55727F5ff881B37B69A6af0B8',
   referral:    '0xe5Ce03D51DDc7598646054480b4D37aEb21B0962',
-  blindbox:    '0xF65669cd9D26BDCb57517586Aa0D252d3A13dE80',
+  blindbox:    '0xfa15ce0b6021f84f93e355e6ab22346f7534f049',
   upgrade:     '0xd8083a57b479bb920d52f0db2257936023b49ea7',
   rental:      '0x7fb3cdf115552721b3f19f06592c07c83f6c7858',
 }

@@ -432,19 +432,46 @@ contract BlindBox is Ownable {
     }
     function setApostleBoxPrice(uint256 p) external onlyOwner { apostleBoxPrice=p; }
     function setDrillBoxPrice(uint256 p)   external onlyOwner { drillBoxPrice=p; }
+    // ── 使徒盲盒概率（白皮书标准）──────────────────────────────────────
+    // rand%100:  0-29=新手(1-30)  30-84=普通(31-60)  85-97=精英(61-84)  98-99=传奇(85-100)
     function buyApostleBox() external {
         require(ERC20Base(ring).transferFrom(msg.sender,owner,apostleBoxPrice),"ring fail");
-        uint256 rand=uint256(keccak256(abi.encodePacked(block.timestamp,msg.sender,++_nonce)));
-        uint8 str=uint8(30+(rand%64)); uint8 elem=uint8((rand>>8)%5);
-        uint256 id=apostle.mint(msg.sender,str,elem);
-        emit ApostleBoxOpened(msg.sender,id,str,elem);
+        uint256 rand=uint256(keccak256(abi.encodePacked(block.timestamp,msg.sender,++_nonce,block.prevrandao)));
+        uint8 tier = uint8(rand % 100);   // 0-99 决定稀有度等级
+        uint8 str;
+        if (tier < 30) {
+            // 新手 30%：力量 1-30
+            str = uint8(1 + (rand >> 8) % 30);
+        } else if (tier < 85) {
+            // 普通 55%：力量 31-60
+            str = uint8(31 + (rand >> 8) % 30);
+        } else if (tier < 98) {
+            // 精英 13%：力量 61-84
+            str = uint8(61 + (rand >> 8) % 24);
+        } else {
+            // 传奇 2%：力量 85-100
+            str = uint8(85 + (rand >> 8) % 16);
+        }
+        uint8 elem = uint8((rand >> 16) % 5);
+        uint256 id = apostle.mint(msg.sender, str, elem);
+        emit ApostleBoxOpened(msg.sender, id, str, elem);
     }
+
+    // ── 钻头盲盒概率（白皮书标准）──────────────────────────────────────
+    // rand%100:  0-34=1星  35-64=2星  65-84=3星  85-94=4星  95-99=5星
     function buyDrillBox() external {
         require(ERC20Base(ring).transferFrom(msg.sender,owner,drillBoxPrice),"ring fail");
-        uint256 rand=uint256(keccak256(abi.encodePacked(block.timestamp,msg.sender,++_nonce,uint256(1))));
-        uint8 tier=uint8((rand%5)+1); uint8 aff=uint8((rand>>8)%5);
-        uint256 id=drill.mint(msg.sender,tier,aff);
-        emit DrillBoxOpened(msg.sender,id,tier,aff);
+        uint256 rand=uint256(keccak256(abi.encodePacked(block.timestamp,msg.sender,++_nonce,block.prevrandao,uint256(1))));
+        uint8 roll = uint8(rand % 100);
+        uint8 tier;
+        if (roll < 35)      tier = 1;  // 1星 35%
+        else if (roll < 65) tier = 2;  // 2星 30%
+        else if (roll < 85) tier = 3;  // 3星 20%
+        else if (roll < 95) tier = 4;  // 4星 10%
+        else                tier = 5;  // 5星  5%
+        uint8 aff = uint8((rand >> 8) % 5);
+        uint256 id = drill.mint(msg.sender, tier, aff);
+        emit DrillBoxOpened(msg.sender, id, tier, aff);
     }
 }
 
