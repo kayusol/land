@@ -74,7 +74,7 @@ function AppInner() {
     <div className="app-root">
       <TopNav pages={pages} current={page} onChange={setPage} />
       <main className="app-main app-main-with-bottom-nav">
-        <div className="fade-up" key={page} style={{ height: '100%' }}>
+        <div className="fade-up" key={page} style={page==='map'?{height:'100%',overflow:'hidden'}:{}}>
           {views[page]}
         </div>
       </main>

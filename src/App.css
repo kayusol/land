@@ -7,14 +7,16 @@
 }
 .app-main {
   flex: 1;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   min-height: 0;
+  -webkit-overflow-scrolling: touch;
+}
+.app-main-with-bottom-nav {
+  padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
 }
 @media (max-width: 768px) {
   .app-root { min-height: 100dvh; }
-  .app-main-with-bottom-nav {
-    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0));
-  }
 }
 
 /* 二级导航 - 仿原版 */
