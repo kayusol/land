@@ -317,22 +317,32 @@ export default function WorldMap() {
     load(); return()=>{dead=true}
   },[pc])
 
-  // 自动聚焦到已铸造区域（cvSize有效且有数据时触发）
+  // 自动聚焦到已铸造区域中心（cvSize有效且有数据时触发一次）
   useEffect(()=>{
     const ownIds=Object.keys(owners)
     const W=cvSize.w, H=cvSize.h
     if(ownIds.length>0 && W>200 && H>200 && !focusedR.current){
       focusedR.current=true
       const ids=ownIds.map(Number)
+      // id = col*ROWS + row + 1, ROWS=100
       const cols=ids.map(id=>Math.floor((id-1)/ROWS))
       const rows=ids.map(id=>(id-1)%ROWS)
-      const minC=Math.min(...cols),maxC=Math.max(...cols)
-      const minR=Math.min(...rows),maxR=Math.max(...rows)
+      const minC=Math.min(...cols), maxC=Math.max(...cols)
+      const minR=Math.min(...rows), maxR=Math.max(...rows)
       const spanC=maxC-minC+1, spanR=Math.max(maxR-minR+1,1)
-      const z=Math.max(3,Math.min(MAX_Z,Math.floor(Math.min(W*0.65/(spanC*CELL),H*0.65/(spanR*CELL)))))
-      const cx=(minC+spanC/2)*CELL-W/z/2
-      const cy=(minR+spanR/2)*CELL-(H-60)/z/2
-      setZoom(z); setPan({x:Math.max(0,cx),y:Math.max(0,cy)})
+      // 选一个能让区域占画布 60% 左右的缩放级别
+      const zByW = W*0.6/(spanC*CELL)
+      const zByH = (H-60)*0.6/(spanR*CELL)
+      const z = Math.max(2, Math.min(MAX_Z, Math.floor(Math.min(zByW, zByH))))
+      // 已铸造区域中心像素坐标
+      const centerX = (minC + spanC/2) * CELL
+      const centerY = (minR + spanR/2) * CELL
+      // pan = 中心坐标 - 视口一半（让中心落在屏幕中央）
+      const px = centerX - W/(2*z)
+      const py = centerY - (H-60)/(2*z)
+      zoomRef.current=z; _setZoom(z)
+      panRef.current={x:Math.max(0,px), y:Math.max(0,py)}
+      dirtyRef.current=true
     }
   },[owners, cvSize])
 

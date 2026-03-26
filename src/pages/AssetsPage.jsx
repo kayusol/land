@@ -397,7 +397,7 @@ function LandTab({pc,address,wc}){
   )
 }
 
-// ── Apostle Tab（含转移）─────────────────────────────────────────────────
+// ── Apostle Tab（含转移+批量挂单）──────────────────────────────────────────
 function ApostleTab({pc,address,wc}){
   const [apos,setApos]=useState([])
   const [loading,setLoading]=useState(true)
@@ -405,6 +405,12 @@ function ApostleTab({pc,address,wc}){
   const [sellModal,setSellModal]=useState(null)
   const [sellPrice,setSellPrice]=useState('3')
   const [transferId,setTransferId]=useState(null)
+  // 批量挂单
+  const [batchModal,setBatchModal]=useState(false)
+  const [batchCount,setBatchCount]=useState('5')
+  const [batchSP,setBatchSP]=useState('3')
+  const [batchEP,setBatchEP]=useState('0.5')
+  const [batchBusy,setBatchBusy]=useState(false)
 
   const load=useCallback(async()=>{
     if(!address||!pc){setLoading(false);return}; setLoading(true)
@@ -444,12 +450,56 @@ function ApostleTab({pc,address,wc}){
       await pc.waitForTransactionReceipt({hash:h}); setMsg('✅ 已撤销');setTimeout(()=>{setMsg('');load()},2000)
     }catch(e){setMsg('❌ '+(e.shortMessage||e.message))}
   }
+  // 批量挂单
+  async function handleBatchSell(){
+    if(!wc)return; setBatchBusy(true); setMsg('批量挂单中...')
+    try{
+      const n=Number(batchCount)||5
+      const sp=parseEther(batchSP||'3'), ep=parseEther(batchEP||'0.5')
+      const isAppr=await pc.readContract({address:CONTRACTS.apostle,abi:NFT_ABI,functionName:'isApprovedForAll',args:[address,NFT_AUCTION_ADDR]}).catch(()=>false)
+      if(!isAppr){ setMsg('授权中...'); const h=await wc.sendTransaction({to:CONTRACTS.apostle,data:encodeFunctionData({abi:NFT_ABI,functionName:'setApprovalForAll',args:[NFT_AUCTION_ADDR,true]})}); await pc.waitForTransactionReceipt({hash:h}) }
+      let done=0
+      for(const a of apos){
+        if(done>=n) break
+        if(a.auction&&Number(a.auction.startedAt??0)>0) continue
+        setMsg(`挂单 ${done+1}/${n} 使徒#${a.id}...`)
+        const h=await wc.sendTransaction({to:NFT_AUCTION_ADDR,data:encodeFunctionData({abi:NFT_AUC_ABI,functionName:'createAuction',args:[CONTRACTS.apostle,BigInt(a.id),sp,ep,BigInt(3*24*3600)]})})
+        await pc.waitForTransactionReceipt({hash:h})
+        done++
+      }
+      setMsg(`✅ 批量挂单完成 ${done}个！`); setBatchModal(false); setTimeout(()=>{setMsg('');load()},2000)
+    }catch(e){setMsg('❌ '+(e.shortMessage||e.message))}
+    setBatchBusy(false)
+  }
 
   if(!address)return <div className="as-empty">请先连接钱包</div>
   if(loading)return <div className="as-loading"><span className="as-spin"/>扫描使徒中...</div>
   return(
     <div>
       {msg&&<div className="as-msg">{msg}</div>}
+      {/* 批量挂单按钮 */}
+      {apos.length>0&&<div style={{marginBottom:8,display:'flex',gap:8,alignItems:'center'}}>
+        <button className="as-btn-sm as-btn-primary" onClick={()=>setBatchModal(true)}>📦 批量挂单</button>
+        <span style={{fontSize:'.72rem',color:'#5040a0'}}>可批量将多个使徒挂到市场</span>
+      </div>}
+      {batchModal&&(
+        <div className="as-sell-overlay" onClick={()=>setBatchModal(false)}>
+          <div className="as-sell-modal" onClick={e=>e.stopPropagation()} style={{minWidth:280}}>
+            <div style={{fontWeight:700,marginBottom:10,color:'#c090ff'}}>📦 批量挂使徒</div>
+            {[['数量上限',batchCount,setBatchCount,'5'],['起拍价(RING)',batchSP,setBatchSP,'3'],['底价(RING)',batchEP,setBatchEP,'0.5']].map(([l,v,s,p])=>(
+              <div key={l} style={{marginBottom:8}}>
+                <div style={{fontSize:'.72rem',color:'#7060a0',marginBottom:3}}>{l}</div>
+                <input className="as-sell-input" type="number" value={v} onChange={e=>s(e.target.value)} placeholder={p}/>
+              </div>
+            ))}
+            <div style={{fontSize:'.68rem',color:'#5040a0',marginBottom:10}}>拍卖时长3天 · 跳过已挂单的</div>
+            <div style={{display:'flex',gap:8}}>
+              <button className="as-btn-primary" style={{padding:'.4rem .8rem',borderRadius:8}} onClick={handleBatchSell} disabled={batchBusy}>{batchBusy?'挂单中...':'确认批量挂单'}</button>
+              <button className="as-btn-secondary" onClick={()=>setBatchModal(false)}>取消</button>
+            </div>
+          </div>
+        </div>
+      )}
       {sellModal&&(
         <div className="as-sell-overlay" onClick={()=>setSellModal(null)}>
           <div className="as-sell-modal" onClick={e=>e.stopPropagation()}>
@@ -495,7 +545,7 @@ function ApostleTab({pc,address,wc}){
   )
 }
 
-// ── Drill Tab（含转移）───────────────────────────────────────────────────
+// ── Drill Tab（含转移+批量挂单）─────────────────────────────────────────────
 function DrillTab({pc,address,wc}){
   const [drills,setDrills]=useState([])
   const [loading,setLoading]=useState(true)
@@ -503,6 +553,11 @@ function DrillTab({pc,address,wc}){
   const [sellModal,setSellModal]=useState(null)
   const [sellPrice,setSellPrice]=useState('3')
   const [transferId,setTransferId]=useState(null)
+  const [batchModal,setBatchModal]=useState(false)
+  const [batchCount,setBatchCount]=useState('5')
+  const [batchSP,setBatchSP]=useState('1')
+  const [batchEP,setBatchEP]=useState('0.2')
+  const [batchBusy,setBatchBusy]=useState(false)
 
   const load=useCallback(async()=>{
     if(!address||!pc){setLoading(false);return}; setLoading(true)
@@ -542,12 +597,57 @@ function DrillTab({pc,address,wc}){
       await pc.waitForTransactionReceipt({hash:h}); setMsg('✅ 已撤销');setTimeout(()=>{setMsg('');load()},2000)
     }catch(e){setMsg('❌ '+(e.shortMessage||e.message))}
   }
+  async function handleBatchSell(){
+    if(!wc)return; setBatchBusy(true); setMsg('批量挂单中...')
+    try{
+      const n=Number(batchCount)||5
+      const isAppr=await pc.readContract({address:CONTRACTS.drill,abi:NFT_ABI,functionName:'isApprovedForAll',args:[address,NFT_AUCTION_ADDR]}).catch(()=>false)
+      if(!isAppr){ const h=await wc.sendTransaction({to:CONTRACTS.drill,data:encodeFunctionData({abi:NFT_ABI,functionName:'setApprovalForAll',args:[NFT_AUCTION_ADDR,true]})}); await pc.waitForTransactionReceipt({hash:h}) }
+      let done=0
+      for(const d of drills){
+        if(done>=n) break
+        if(d.auction&&Number(d.auction.startedAt??0)>0) continue
+        // 按星级倍增定价
+        const mul=[0,1,2,4,8,16][d.tier]||1
+        const sp=parseEther((parseFloat(batchSP)*mul).toFixed(2))
+        const ep=parseEther((parseFloat(batchEP)*mul).toFixed(2))
+        setMsg(`挂单 ${done+1}/${n} 钻头#${d.id} (${d.tier}★)...`)
+        const h=await wc.sendTransaction({to:NFT_AUCTION_ADDR,data:encodeFunctionData({abi:NFT_AUC_ABI,functionName:'createAuction',args:[CONTRACTS.drill,BigInt(d.id),sp,ep,BigInt(3*24*3600)]})})
+        await pc.waitForTransactionReceipt({hash:h})
+        done++
+      }
+      setMsg(`✅ 批量挂单完成 ${done}个！`); setBatchModal(false); setTimeout(()=>{setMsg('');load()},2000)
+    }catch(e){setMsg('❌ '+(e.shortMessage||e.message))}
+    setBatchBusy(false)
+  }
 
   if(!address)return <div className="as-empty">请先连接钱包</div>
   if(loading)return <div className="as-loading"><span className="as-spin"/>扫描钻头中...</div>
   return(
     <div>
       {msg&&<div className="as-msg">{msg}</div>}
+      {drills.length>0&&<div style={{marginBottom:8,display:'flex',gap:8,alignItems:'center'}}>
+        <button className="as-btn-sm as-btn-primary" onClick={()=>setBatchModal(true)}>📦 批量挂单</button>
+        <span style={{fontSize:'.72rem',color:'#5040a0'}}>按星级自动倍增定价</span>
+      </div>}
+      {batchModal&&(
+        <div className="as-sell-overlay" onClick={()=>setBatchModal(false)}>
+          <div className="as-sell-modal" onClick={e=>e.stopPropagation()} style={{minWidth:280}}>
+            <div style={{fontWeight:700,marginBottom:10,color:'#c090ff'}}>📦 批量挂钻头</div>
+            {[['数量上限',batchCount,setBatchCount,'5'],['1★起拍(RING)',batchSP,setBatchSP,'1'],['1★底价(RING)',batchEP,setBatchEP,'0.2']].map(([l,v,s,p])=>(
+              <div key={l} style={{marginBottom:8}}>
+                <div style={{fontSize:'.72rem',color:'#7060a0',marginBottom:3}}>{l}</div>
+                <input className="as-sell-input" type="number" value={v} onChange={e=>s(e.target.value)} placeholder={p}/>
+              </div>
+            ))}
+            <div style={{fontSize:'.68rem',color:'#5040a0',marginBottom:10}}>1★×1 2★×2 3★×4 4★×8 5★×16 · 3天荷兰拍</div>
+            <div style={{display:'flex',gap:8}}>
+              <button className="as-btn-primary" style={{padding:'.4rem .8rem',borderRadius:8}} onClick={handleBatchSell} disabled={batchBusy}>{batchBusy?'挂单中...':'确认批量挂单'}</button>
+              <button className="as-btn-secondary" onClick={()=>setBatchModal(false)}>取消</button>
+            </div>
+          </div>
+        </div>
+      )}
       {sellModal&&(
         <div className="as-sell-overlay" onClick={()=>setSellModal(null)}>
           <div className="as-sell-modal" onClick={e=>e.stopPropagation()}>
