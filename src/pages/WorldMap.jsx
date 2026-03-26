@@ -18,13 +18,16 @@ const AUC_ABI = [
 const MINING_ABI = [
   { type:'function', name:'slotCount', inputs:[{name:'landId',type:'uint256'}], outputs:[{type:'uint256'}], stateMutability:'view' },
   { type:'function', name:'slots', inputs:[{name:'landId',type:'uint256'},{name:'index',type:'uint256'}],
-    outputs:[{name:'apostleId',type:'uint256'},{name:'drillId',type:'uint256'},{name:'startTime',type:'uint256'}], stateMutability:'view' },
+    outputs:[{name:'apostleId',type:'uint256'},{name:'drillId',type:'uint256'},{name:'startTime',type:'uint256'},{name:'placer',type:'address'},{name:'isOwnerSlot',type:'bool'}], stateMutability:'view' },
   { type:'function', name:'pendingRewards', inputs:[{name:'landId',type:'uint256'}], outputs:[{type:'uint256[5]'}], stateMutability:'view' },
+  { type:'function', name:'pendingMinerRewards', inputs:[{name:'miner',type:'address'},{name:'landId',type:'uint256'}], outputs:[{type:'uint256[5]'}], stateMutability:'view' },
   { type:'function', name:'MAX_APOSTLES_PER_LAND', inputs:[], outputs:[{type:'uint256'}], stateMutability:'view' },
   { type:'function', name:'startMining', inputs:[{name:'landId',type:'uint256'},{name:'apostleId',type:'uint256'},{name:'drillId',type:'uint256'}], outputs:[], stateMutability:'nonpayable' },
   { type:'function', name:'stopMining', inputs:[{name:'landId',type:'uint256'},{name:'apostleId',type:'uint256'}], outputs:[], stateMutability:'nonpayable' },
   { type:'function', name:'claim', inputs:[{name:'landId',type:'uint256'}], outputs:[], stateMutability:'nonpayable' },
+  { type:'function', name:'claimMiner', inputs:[{name:'landId',type:'uint256'}], outputs:[], stateMutability:'nonpayable' },
   { type:'function', name:'apostleOnLand', inputs:[{name:'apostleId',type:'uint256'}], outputs:[{type:'uint256'}], stateMutability:'view' },
+  { type:'function', name:'landFeeBps', inputs:[], outputs:[{type:'uint256'}], stateMutability:'view' },
 ]
 const APO_ABI_WM=[
   {type:'function',name:'attrs',inputs:[{name:'id',type:'uint256'}],
@@ -761,13 +764,17 @@ export default function WorldMap() {
     }catch(e){alert('停止失败: '+(e.shortMessage||e.message))}
   }
 
-  // ── 领取资源 ─────────────────────────────────────────────────────────────
+  // ── 领取资源 ─────────────────────────────────────────────────────
   async function handleClaim(landId) {
     if(!wc)return
+    // 判断是地块持有者还是矿工
+    const landOwner = await pc.readContract({address:CONTRACTS.land,abi:LAND_ABI,functionName:'ownerOf',args:[BigInt(landId)]}).catch(()=>null)
+    const isLandOwner = landOwner?.toLowerCase() === address?.toLowerCase()
+    const fn = isLandOwner ? 'claim' : 'claimMiner'
     try{
-      const h=await wc.sendTransaction({to:CONTRACTS.mining,data:encodeFunctionData({abi:MINING_ABI,functionName:'claim',args:[BigInt(landId)]})})
+      const h=await wc.sendTransaction({to:CONTRACTS.mining,data:encodeFunctionData({abi:MINING_ABI,functionName:fn,args:[BigInt(landId)]})})
       await pc.waitForTransactionReceipt({hash:h})
-      alert('✅ 领取成功！')
+      alert(isLandOwner ? '✅ 领取成功！（地块持有者收益+手续费）' : '✅ 领取成功！（矿工收益）')
     }catch(e){
       const m=e.shortMessage||e.message||''
       if(m.includes('internal')||m.includes('Internal')){

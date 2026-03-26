@@ -21,10 +21,13 @@ const DRL_ABI=[{type:'function',name:'attrs',inputs:[{name:'id',type:'uint256'}]
 const LAND_ABI=[{type:'function',name:'resourceAttr',inputs:[{name:'id',type:'uint256'}],outputs:[{type:'uint80'}],stateMutability:'view'}]
 const MINING_ABI=[
   {type:'function',name:'slotCount',inputs:[{name:'l',type:'uint256'}],outputs:[{type:'uint256'}],stateMutability:'view'},
-  {type:'function',name:'slots',inputs:[{name:'l',type:'uint256'},{name:'i',type:'uint256'}],outputs:[{name:'apostleId',type:'uint256'},{name:'drillId',type:'uint256'},{name:'startTime',type:'uint256'}],stateMutability:'view'},
+  {type:'function',name:'slots',inputs:[{name:'l',type:'uint256'},{name:'i',type:'uint256'}],outputs:[{name:'apostleId',type:'uint256'},{name:'drillId',type:'uint256'},{name:'startTime',type:'uint256'},{name:'placer',type:'address'},{name:'isOwnerSlot',type:'bool'}],stateMutability:'view'},
   {type:'function',name:'pendingRewards',inputs:[{name:'l',type:'uint256'}],outputs:[{type:'uint256[5]'}],stateMutability:'view'},
+  {type:'function',name:'pendingMinerRewards',inputs:[{name:'miner',type:'address'},{name:'l',type:'uint256'}],outputs:[{type:'uint256[5]'}],stateMutability:'view'},
   {type:'function',name:'claim',inputs:[{name:'l',type:'uint256'}],outputs:[],stateMutability:'nonpayable'},
-  {type:'function',name:'stopMining',inputs:[{name:'l',type:'uint256'},{name:'slot',type:'uint256'}],outputs:[],stateMutability:'nonpayable'},
+  {type:'function',name:'claimMiner',inputs:[{name:'l',type:'uint256'}],outputs:[],stateMutability:'nonpayable'},
+  {type:'function',name:'stopMining',inputs:[{name:'l',type:'uint256'},{name:'apostleId',type:'uint256'}],outputs:[],stateMutability:'nonpayable'},
+  {type:'function',name:'landFeeBps',inputs:[],outputs:[{type:'uint256'}],stateMutability:'view'},
 ]
 const AUC_ABI=[
   {type:'function',name:'createAuction',inputs:[{name:'id',type:'uint256'},{name:'sp',type:'uint128'},{name:'ep',type:'uint128'},{name:'dur',type:'uint64'}],outputs:[],stateMutability:'nonpayable'},
@@ -607,26 +610,42 @@ function MiningTab({pc,address,wc}){
       const relevantIds=allIds.filter((_,i)=>{const o=ownerRes[i]?.result?.toLowerCase();return o===address.toLowerCase()||o===miningAddr})
       if(!relevantIds.length){setLands([]);setLoading(false);return}
       const slotCounts=await pc.multicall({contracts:relevantIds.map(id=>({address:CONTRACTS.mining,abi:MINING_ABI,functionName:'slotCount',args:[BigInt(id)]})),allowFailure:true})
-      const activeLandIds=relevantIds.filter((_,i)=>Number(slotCounts[i]?.result??0n)>0)
+      // 也扫描：矿工在哪些地块上有使徒（通过 pendingMinerRewards 非零判断）
+      const activeLandIds=[]
+      for(let i=0;i<relevantIds.length;i++){
+        if(Number(slotCounts[i]?.result??0n)>0) activeLandIds.push(relevantIds[i])
+      }
+      // 补充：扫描所有地块看是否有矿工待领取
+      const allLandIds=[]
+      for(let x=0;x<12;x++) for(let y=0;y<5;y++) allLandIds.push(x*100+y+1)
+      const minerPendingCheck=await pc.multicall({contracts:allLandIds.map(id=>({address:CONTRACTS.mining,abi:MINING_ABI,functionName:'pendingMinerRewards',args:[address,BigInt(id)]})),allowFailure:true})
+      allLandIds.forEach((id,i)=>{
+        const r=minerPendingCheck[i]?.result
+        if(r&&r.some(v=>v>0n)&&!activeLandIds.includes(id)) activeLandIds.push(id)
+      })
       if(!activeLandIds.length){setLands([]);setLoading(false);return}
       const landData=[]
       for(const id of activeLandIds){
         const cnt=Number(await pc.readContract({address:CONTRACTS.mining,abi:MINING_ABI,functionName:'slotCount',args:[BigInt(id)]}))
-        const [rewards,slotsData]=await Promise.all([
-          pc.readContract({address:CONTRACTS.mining,abi:MINING_ABI,functionName:'pendingRewards',args:[BigInt(id)]}).catch(()=>null),
+        const landOwner=await pc.readContract({address:CONTRACTS.land,abi:[{type:'function',name:'ownerOf',inputs:[{name:'id',type:'uint256'}],outputs:[{type:'address'}],stateMutability:'view'}],functionName:'ownerOf',args:[BigInt(id)]}).catch(()=>null)
+        const isLandOwner=landOwner?.toLowerCase()===address.toLowerCase()
+        const [ownerRewards,minerRewards,slotsData]=await Promise.all([
+          isLandOwner?pc.readContract({address:CONTRACTS.mining,abi:MINING_ABI,functionName:'pendingRewards',args:[BigInt(id)]}).catch(()=>null):Promise.resolve(null),
+          pc.readContract({address:CONTRACTS.mining,abi:MINING_ABI,functionName:'pendingMinerRewards',args:[address,BigInt(id)]}).catch(()=>null),
           Promise.all(Array.from({length:cnt},(_,j)=>pc.readContract({address:CONTRACTS.mining,abi:MINING_ABI,functionName:'slots',args:[BigInt(id),BigInt(j)]}).catch(()=>null)))
         ])
-        landData.push({id,slotCount:cnt,rewards,slots:slotsData.filter(Boolean)})
+        landData.push({id,slotCount:cnt,ownerRewards,minerRewards,slots:slotsData.filter(Boolean),isLandOwner})
       }
       setLands(landData)
     }catch(e){console.error(e)}; setLoading(false)
   },[address,pc])
   useEffect(()=>{load()},[load])
 
-  async function handleClaim(landId){
+  async function handleClaim(landId, isLandOwner){
     if(!wc)return; setMsg('领取中...')
     try{
-      const h=await wc.sendTransaction({to:CONTRACTS.mining,data:encodeFunctionData({abi:MINING_ABI,functionName:'claim',args:[BigInt(landId)]})})
+      const fn = isLandOwner ? 'claim' : 'claimMiner'
+      const h=await wc.sendTransaction({to:CONTRACTS.mining,data:encodeFunctionData({abi:MINING_ABI,functionName:fn,args:[BigInt(landId)]})})
       await pc.waitForTransactionReceipt({hash:h}); setMsg('✅ 领取成功！');setTimeout(()=>{setMsg('');load()},2000)
     }catch(e){
       const m=e.shortMessage||e.message||''
@@ -652,37 +671,57 @@ function MiningTab({pc,address,wc}){
     <div>
       {msg&&<div className="as-msg">{msg}</div>}
       <div style={{display:'flex',flexDirection:'column',gap:12}}>
-        {lands.map(l=>(
-          <div key={l.id} className="as-mining-card">
-            <div className="as-mining-head">
-              <img src={landImgUrl(l.id)} alt="land" style={{width:52,height:52,borderRadius:8,objectFit:'cover'}}/>
-              <div style={{flex:1}}>
-                <div style={{fontWeight:700,color:'#c090ff'}}>土地 #{l.id}</div>
-                <div style={{fontSize:'.72rem',color:'#5040a0'}}>{l.slotCount} 个使徒工作中</div>
+        {lands.map(l=>{
+          const hasOwnerReward=l.ownerRewards&&l.ownerRewards.some(v=>v>0n)
+          const hasMinerReward=l.minerRewards&&l.minerRewards.some(v=>v>0n)
+          return(
+            <div key={l.id} className="as-mining-card">
+              <div className="as-mining-head">
+                <img src={landImgUrl(l.id)} alt="land" style={{width:52,height:52,borderRadius:8,objectFit:'cover'}}/>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:700,color:'#c090ff'}}>土地 #{l.id}</div>
+                  <div style={{fontSize:'.72rem',color:'#5040a0'}}>{l.slotCount} 个使徒工作中</div>
+                  {l.isLandOwner&&<div style={{fontSize:'.65rem',color:'#f0c040'}}>⭐ 你是地块持有者</div>}
+                </div>
+                <div style={{display:'flex',flexDirection:'column',gap:4}}>
+                  {l.isLandOwner&&(
+                    <button className="as-btn-sm as-btn-primary" onClick={()=>handleClaim(l.id,true)} disabled={!hasOwnerReward}>💰 领取(地主)</button>
+                  )}
+                  {hasMinerReward&&(
+                    <button className="as-btn-sm" style={{background:'#1a3a1a',border:'1px solid #2a6a2a',color:'#52c462',borderRadius:6,padding:'4px 8px',fontSize:'.72rem',cursor:'pointer'}} onClick={()=>handleClaim(l.id,false)}>⛏️ 领取(矿工)</button>
+                  )}
+                </div>
               </div>
-              <button className="as-btn-sm as-btn-primary" onClick={()=>handleClaim(l.id)}>💰 领取</button>
-            </div>
-            {l.rewards&&(
-              <div className="as-rewards-row">
-                <span style={{fontSize:'.68rem',color:'#5040a0',marginRight:6}}>待领：</span>
-                {ELEMS.map((el,i)=>(
-                  <span key={i} style={{fontSize:'.72rem',color:el.color,marginRight:8}}><ElemIcon i={i} size={11}/>{fmtR(l.rewards[i]||0n,2)}</span>
+              {l.isLandOwner&&l.ownerRewards&&(
+                <div className="as-rewards-row">
+                  <span style={{fontSize:'.68rem',color:'#f0c040',marginRight:6}}>地主待领（含手续费）：</span>
+                  {ELEMS.map((el,i)=>(
+                    <span key={i} style={{fontSize:'.72rem',color:el.color,marginRight:8}}><ElemIcon i={i} size={11}/>{fmtR(l.ownerRewards[i]||0n,2)}</span>
+                  ))}
+                </div>
+              )}
+              {l.minerRewards&&l.minerRewards.some(v=>v>0n)&&(
+                <div className="as-rewards-row">
+                  <span style={{fontSize:'.68rem',color:'#52c462',marginRight:6}}>矿工待领（扣10%手续费）：</span>
+                  {ELEMS.map((el,i)=>(
+                    <span key={i} style={{fontSize:'.72rem',color:el.color,marginRight:8}}><ElemIcon i={i} size={11}/>{fmtR(l.minerRewards[i]||0n,2)}</span>
+                  ))}
+                </div>
+              )}
+              <div className="as-slots-row">
+                {l.slots.map((slot,j)=>(
+                  <div key={j} className="as-slot-chip">
+                    <img src={APO_EGG_GIF} style={{width:22,height:22}}/>
+                    <span>#{slot.apostleId?.toString()}</span>
+                    {slot.isOwnerSlot&&<span style={{fontSize:'.6rem',color:'#f0c040'}}>⭐</span>}
+                    {slot.drillId>0n&&<><img src={drillImgUrl(0,1)} style={{width:22,height:22}}/><span>#{slot.drillId?.toString()}</span></>}
+                    <button className="as-btn-xs as-btn-danger" onClick={()=>handleStop(l.id,slot.apostleId)}>停</button>
+                  </div>
                 ))}
               </div>
-            )}
-            <div className="as-slots-row">
-              {l.slots.map((slot,j)=>(
-                <div key={j} className="as-slot-chip">
-                  <img src={APO_EGG_GIF} style={{width:22,height:22}}/>
-                  <span>#{slot.apostleId?.toString()}</span>
-                  <img src={drillImgUrl(0,1)} style={{width:22,height:22}}/>
-                  <span>#{slot.drillId?.toString()}</span>
-                  <button className="as-btn-xs as-btn-danger" onClick={()=>handleStop(l.id,slot.apostleId)}>停</button>
-                </div>
-              ))}
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )

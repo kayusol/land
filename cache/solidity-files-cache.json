@@ -377,8 +377,8 @@
       ]
     },
     "C:\\Users\\1\\Downloads\\evo-land-frontend-main\\evo-land-frontend-main\\contracts\\MiningV2.sol": {
-      "lastModificationDate": 1774012186407,
-      "contentHash": "413df68211ed65f3e621b70655f8e4d1",
+      "lastModificationDate": 1774489827665,
+      "contentHash": "381cbabdb5e28f4d1ec4932bb1b73f7a",
       "sourceName": "contracts/MiningV2.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -414,7 +414,7 @@
         "IERC721Receiver",
         "ILandNFT",
         "IMintable",
-        "MiningSystemV2",
+        "MiningSystemV3",
         "Ownable"
       ]
     },
