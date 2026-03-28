@@ -861,7 +861,7 @@ export default function WorldMap() {
         {/* 顶部状态栏 */}
         <div className="wm-topbar">
           <div className="wm-topbar-l">
-            <span className="wm-badge">🌐 BSC 大陆</span>
+            <span className="wm-badge">🌐 哥伦布大陆</span>
             <span className="wm-minted">已铸造 <b>{minted}</b> / 10,000</span>
             {loading&&<span className="wm-spin-wrap"><span className="wm-spinner"/>刷新中</span>}
           </div>
@@ -911,7 +911,7 @@ export default function WorldMap() {
             <div className="wm-sec">
               <div className="wm-sec-title">属性 (ATTRIBUTES)</div>
               <div className="wm-kv"><span>类型</span><span>{selOwner?'普通地块':'未铸造'}</span></div>
-              <div className="wm-kv"><span>大陆</span><span>BSC 测试网</span></div>
+              <div className="wm-kv"><span>大陆</span><span>哥伦布大陆</span></div>
             </div>
             {selAuc&&(
               <div className="wm-sec">

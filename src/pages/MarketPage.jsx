@@ -282,7 +282,7 @@ function LandDetail({item,onClose,onBuy,address}){
           <div className="mk-apo-info">
             <div className="mk-apo-name">土地 #{item.id}</div>
             <div className="mk-apo-addr">{fmtAddr(item.seller)}</div>
-            <div className="mk-apo-desc">坐标 ({col},{row}) · BSC 大陆</div>
+            <div className="mk-apo-desc">坐标 ({col},{row}) · 哥伦布大陆</div>
           </div>
           <button className="mk-modal-close" onClick={onClose}>✕</button>
         </div>

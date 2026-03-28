@@ -42,8 +42,8 @@ export default function TopNav({ pages, current, onChange }) {
       <div className="nav-logo">
         <div className="nav-logo-icon">🌐</div>
         <div className="nav-logo-text">
-          <span className="nav-logo-main">进化星球</span>
-          <span className="nav-logo-sub">BSC TESTNET</span>
+          <span className="nav-logo-main">哥伦布大陆</span>
+          <span className="nav-logo-sub">COLUMBUS LAND</span>
         </div>
       </div>
       <div className="nav-links">
