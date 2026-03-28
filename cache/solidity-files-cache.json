@@ -591,6 +591,43 @@
         "Ownable",
         "UpgradeSystem"
       ]
+    },
+    "C:\\Users\\1\\Downloads\\evo-land-frontend-main\\evo-land-frontend-main\\contracts\\LandMeta.sol": {
+      "lastModificationDate": 1774658754402,
+      "contentHash": "0931811e6cc173ccee686b449dea1704",
+      "sourceName": "contracts/LandMeta.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "evmVersion": "paris",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "ILandNFT",
+        "LandMeta"
+      ]
     }
   }
 }

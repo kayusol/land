@@ -15,6 +15,7 @@ export const CONTRACTS = {
   blindbox:    '0xfa15ce0b6021f84f93e355e6ab22346f7534f049',
   upgrade:     '0xd8083a57b479bb920d52f0db2257936023b49ea7',
   rental:      '0x7fb3cdf115552721b3f19f06592c07c83f6c7858',
+  landMeta:    '0xad2f254ea1068800b982c2f2e705fcb5960b4625',
 }
 
 export const NFT_AUCTION_ADDR = '0xe489Fd17B4aBF3b22482Bf0f09193f9902f1fd22'

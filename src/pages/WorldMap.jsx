@@ -43,6 +43,16 @@ const APO_ABI_WM=[
 const DRL_ABI_WM=[{type:'function',name:'attrs',inputs:[{name:'id',type:'uint256'}],outputs:[{name:'tier',type:'uint8'},{name:'affinity',type:'uint8'}],stateMutability:'view'},{type:'function',name:'nextId',inputs:[],outputs:[{type:'uint256'}],stateMutability:'view'},{type:'function',name:'ownerOf',inputs:[{name:'id',type:'uint256'}],outputs:[{type:'address'}],stateMutability:'view'},{type:'function',name:'setApprovalForAll',inputs:[{name:'op',type:'address'},{name:'v',type:'bool'}],outputs:[],stateMutability:'nonpayable'}]
 const NFT_ABI_WM=[{type:'function',name:'isApprovedForAll',inputs:[{name:'owner',type:'address'},{name:'op',type:'address'}],outputs:[{type:'bool'}],stateMutability:'view'}]
 
+// ─── LandMeta ABI ────────────────────────────────────────────────────────────
+const LAND_META_ABI = [
+  { type:'function', name:'metas', inputs:[{name:'landId',type:'uint256'}],
+    outputs:[{name:'avatarUrl',type:'string'},{name:'description',type:'string'},{name:'updatedAt',type:'uint64'}],
+    stateMutability:'view' },
+  { type:'function', name:'setMeta',
+    inputs:[{name:'landId',type:'uint256'},{name:'avatarUrl',type:'string'},{name:'description',type:'string'}],
+    outputs:[], stateMutability:'nonpayable' },
+]
+
 // ─── 白皮书颜色 — 每种状态5色调色板做像素纹理 ──────────────────────────────
 // [底色, 亮色1, 暗色1, 亮色2, 暗色2]
 const PAL = {
@@ -176,13 +186,20 @@ export default function WorldMap() {
   const [slots,setSlots]=useState({})
   const [rewards,setRewards]=useState({})
   const [sel,setSel]=useState(null)
-  const [hov,setHov]=useState(null) // 只用于 tooltip 显示，不触发 canvas 重绘
+  const [hov,setHov]=useState(null)
   const [hovPos,setHovPos]=useState({x:0,y:0})
   const [loading,setLoading]=useState(true)
   const [minted,setMinted]=useState(0)
   const [filter,setFilter]=useState('all')
   const [cvSize,setCvSize]=useState({w:900,h:600})
   const panR=useRef({dn:false,sx:0,sy:0,px:0,py:0,mv:false})
+
+  // ── 土地元数据 state ────────────────────────────────────────────────────────
+  const [landMeta, setLandMeta] = useState({})
+  const [editingMeta, setEditingMeta] = useState(false)
+  const [metaForm, setMetaForm] = useState({ avatarUrl: '', description: '' })
+  const [metaMsg, setMetaMsg] = useState('')
+  const [metaBusy, setMetaBusy] = useState(false)
 
   // ── zoom/pan 用 ref 驱动 RAF 渲染（顺滑平移核心）─────────────────────────
   const initZoom = Math.max(0.5, Math.min((window.innerHeight-80)/(ROWS*CELL), (window.innerWidth)/(COLS*CELL)))
@@ -379,6 +396,43 @@ export default function WorldMap() {
       }catch(e){console.error(e)}
     })(); return()=>{dead=true}
   },[sel,pc,owners])
+
+  // 选中地块时读取元数据
+  useEffect(()=>{
+    if(!sel||!pc||!CONTRACTS.landMeta) return
+    let dead=false
+    pc.readContract({
+      address: CONTRACTS.landMeta,
+      abi: LAND_META_ABI,
+      functionName: 'metas',
+      args: [BigInt(sel)]
+    }).then(r=>{
+      if(!dead) setLandMeta(p=>({...p,[sel]:{avatarUrl:r[0]||'',description:r[1]||''}}))
+    }).catch(()=>{})
+    return ()=>{dead=true}
+  },[sel,pc])
+
+  // ── 保存元数据上链 ──────────────────────────────────────────────────────────
+  async function handleSaveMeta() {
+    if(!wc||!address||!sel) return
+    setMetaBusy(true); setMetaMsg('写入链上...')
+    try {
+      const h = await wc.sendTransaction({
+        to: CONTRACTS.landMeta,
+        data: encodeFunctionData({
+          abi: LAND_META_ABI,
+          functionName: 'setMeta',
+          args: [BigInt(sel), metaForm.avatarUrl.trim(), metaForm.description.trim()]
+        })
+      })
+      await pc.waitForTransactionReceipt({ hash: h })
+      setLandMeta(p=>({...p,[sel]:{avatarUrl:metaForm.avatarUrl.trim(),description:metaForm.description.trim()}}))
+      setMetaMsg('✅ 保存成功！')
+      setTimeout(()=>{ setEditingMeta(false); setMetaMsg('') }, 1500)
+    } catch(e) {
+      setMetaMsg('❌ '+(e.shortMessage||e.message))
+    } finally { setMetaBusy(false) }
+  }
 
   // ─── RAF 渲染循环（顺滑平移核心）────────────────────────────────────────────
   useEffect(()=>{
@@ -615,6 +669,7 @@ export default function WorldMap() {
   const selRow=sel!=null?(sel-1)%ROWS:null
   const isMe=!!(address&&selOwner&&selOwner.toLowerCase()===address.toLowerCase())
   const maxV=Math.max(1,...selVals)
+  const selMeta=sel?landMeta[sel]:null
   const hovCell=hov?{col:Math.floor((hov-1)/ROWS),row:(hov-1)%ROWS,own:!!owners[hov],auc:!!aucs[hov],isMe:!!(address&&owners[hov]&&owners[hov].toLowerCase()===address?.toLowerCase())}:null
   const ELEMS=[{k:'GOLD',c:'#f0c040',i:'🪙'},{k:'WOOD',c:'#52c462',i:'🪵'},{k:'WATER',c:'#40a0f0',i:'💧'},{k:'FIRE',c:'#f05030',i:'🔥'},{k:'SOIL',c:'#c08040',i:'🪨'}]
   // 图例
@@ -850,17 +905,13 @@ export default function WorldMap() {
             {selOwner&&<span className={`wm-panel-tag${isMe?' me':selAuc?' auc':''}`}>
               {isMe?'⭐ 我的':selAuc?'🔨 拍卖中':'已有主'}
             </span>}
-            <button className="wm-panel-close" onClick={()=>setSel(null)}>✕</button>
+            <button className="wm-panel-close" onClick={()=>{setSel(null);setEditingMeta(false);setMetaMsg('')}}>✕</button>
           </div>
           <div className="wm-panel-body">
             <div className="wm-sec">
               <div className="wm-sec-title">属性 (ATTRIBUTES)</div>
               <div className="wm-kv"><span>类型</span><span>{selOwner?'普通地块':'未铸造'}</span></div>
-              <div className="wm-kv"><span>坐标</span><span>({selCol}, {selRow})</span></div>
               <div className="wm-kv"><span>大陆</span><span>BSC 测试网</span></div>
-              <div className="wm-kv"><span>所有者</span>
-                {selOwner?<a className="wm-addr" href={`https://testnet.bscscan.com/address/${selOwner}`} target="_blank" rel="noreferrer">{fmtAddr(selOwner)}</a>:<span className="wm-dim">—</span>}
-              </div>
             </div>
             {selAuc&&(
               <div className="wm-sec">
@@ -872,11 +923,91 @@ export default function WorldMap() {
               </div>
             )}
             <div className="wm-sec">
-              <div className="wm-sec-title">信息 (INFORMATION)</div>
-              <div className="wm-kv-col">
-                <span style={{color:'#5040a0',fontSize:'.7rem'}}>介绍</span>
-                <span style={{color:'#9080b0',fontSize:'.72rem'}}>空空如也</span>
+              <div className="wm-sec-title" style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                <span>信息 (INFORMATION)</span>
+                {isMe && !editingMeta && (
+                  <button className="wm-btn-sm" onClick={()=>{
+                    setMetaForm({avatarUrl:selMeta?.avatarUrl||'',description:selMeta?.description||''})
+                    setMetaMsg(''); setEditingMeta(true)
+                  }}>✏️ 编辑</button>
+                )}
               </div>
+
+              {/* 显示模式 */}
+              {!editingMeta && (
+                <div style={{display:'flex',gap:10,alignItems:'flex-start'}}>
+                  {selMeta?.avatarUrl ? (
+                    <img src={selMeta.avatarUrl} alt="avatar"
+                      style={{width:56,height:56,borderRadius:8,objectFit:'cover',border:'1px solid #2a1a5a',flexShrink:0}}
+                      onError={e=>{e.target.style.display='none'}}
+                    />
+                  ) : (
+                    <div style={{width:56,height:56,borderRadius:8,background:'#1a1040',border:'1px dashed #2a1a5a',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'1.4rem',flexShrink:0}}>🏡</div>
+                  )}
+                  <div style={{flex:1,minWidth:0}}>
+                    {selMeta?.description
+                      ? <p style={{color:'#9080b0',fontSize:'.75rem',lineHeight:1.5,margin:'0 0 6px',wordBreak:'break-all'}}>{selMeta.description}</p>
+                      : <span style={{color:'#3a2a6a',fontSize:'.73rem'}}>暂无介绍{isMe?' — 点击编辑添加':''}</span>
+                    }
+                    <div className="wm-kv"><span>坐标</span><span>({selCol}, {selRow})</span></div>
+                    <div className="wm-kv"><span>所有者</span>
+                      {selOwner
+                        ?<a className="wm-addr" href={`https://testnet.bscscan.com/address/${selOwner}`} target="_blank" rel="noreferrer">{fmtAddr(selOwner)}</a>
+                        :<span className="wm-dim">—</span>}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 编辑模式（仅 owner） */}
+              {editingMeta && isMe && (
+                <div style={{display:'flex',flexDirection:'column',gap:8,marginTop:4}}>
+                  <div>
+                    <div style={{fontSize:'.7rem',color:'#5040a0',marginBottom:3}}>头像图片 URL（不超过 256 字符）</div>
+                    <input
+                      style={{width:'100%',boxSizing:'border-box',background:'#0a0818',border:'1px solid #2a1a5a',borderRadius:6,color:'#c0b0e0',padding:'.4rem .6rem',fontSize:'.78rem'}}
+                      placeholder="https://... 图片链接"
+                      value={metaForm.avatarUrl}
+                      onChange={e=>setMetaForm(f=>({...f,avatarUrl:e.target.value}))}
+                      maxLength={256}
+                    />
+                    {metaForm.avatarUrl && (
+                      <img src={metaForm.avatarUrl} alt="preview"
+                        style={{marginTop:4,width:48,height:48,borderRadius:6,objectFit:'cover',border:'1px solid #2a1a5a'}}
+                        onError={e=>{e.target.style.opacity=0.3}}
+                      />
+                    )}
+                  </div>
+                  <div>
+                    <div style={{fontSize:'.7rem',color:'#5040a0',marginBottom:3}}>土地简介（不超过 1000 字符）</div>
+                    <textarea
+                      style={{width:'100%',boxSizing:'border-box',background:'#0a0818',border:'1px solid #2a1a5a',borderRadius:6,color:'#c0b0e0',padding:'.4rem .6rem',fontSize:'.78rem',minHeight:72,resize:'vertical',fontFamily:'inherit'}}
+                      placeholder="描述这块土地的故事、特色..."
+                      value={metaForm.description}
+                      onChange={e=>setMetaForm(f=>({...f,description:e.target.value}))}
+                      maxLength={1000}
+                    />
+                    <div style={{fontSize:'.65rem',color:'#3a2a6a',textAlign:'right'}}>{metaForm.description.length}/1000</div>
+                  </div>
+                  {metaMsg && (
+                    <div style={{fontSize:'.78rem',padding:'6px 8px',borderRadius:6,background:'#0a0818',
+                      color:metaMsg.startsWith('✅')?'#52c462':'#f06070',
+                      border:`1px solid ${metaMsg.startsWith('✅')?'#1a4a2a':'#4a1a2a'}`}}>{metaMsg}</div>
+                  )}
+                  <div style={{display:'flex',gap:6}}>
+                    <button
+                      style={{flex:1,padding:'.45rem',background:'linear-gradient(135deg,#4a1a9a,#7a30cc)',border:'none',borderRadius:7,color:'#fff',fontSize:'.8rem',cursor:'pointer',fontWeight:600,opacity:metaBusy?0.5:1}}
+                      onClick={handleSaveMeta} disabled={metaBusy}>
+                      {metaBusy ? '上链中...' : '💾 保存上链'}
+                    </button>
+                    <button
+                      style={{padding:'.45rem .9rem',background:'#1a1040',border:'1px solid #2a1a5a',borderRadius:7,color:'#7060a0',fontSize:'.8rem',cursor:'pointer'}}
+                      onClick={()=>{setEditingMeta(false);setMetaMsg('')}}>
+                      取消
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="wm-sec">
               <div className="wm-sec-title">资源 (RESOURCES) <span className="wm-hint">每日最大挖矿量</span></div>
