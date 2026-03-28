@@ -1,98 +1,125 @@
-// api/listings.js — Vercel Serverless Function
-// 只扫最近 3 天区块（BSC 每3秒一块，3天≈86400块）
-// 活跃拍卖不可能在3天前挂上去还没成交，所以无需从创世块扫
-import { createPublicClient, http, parseAbiItem } from 'viem'
+// api/listings.js — 直接 multicall getAuction 扫描活跃挂单
+// 不依赖事件日志（合约未正确emit事件），直接读链上状态
+import { createPublicClient, http } from 'viem'
+import { bscTestnet } from 'viem/chains'
 
-const bscTestnet = {
-  id: 97, name: 'BSC Testnet',
-  nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
-  rpcUrls: { default: { http: ['https://bsc-testnet-rpc.publicnode.com'] } },
-}
 const pc = createPublicClient({ chain: bscTestnet, transport: http('https://bsc-testnet-rpc.publicnode.com') })
 
-const NFT_AUC  = '0xe489Fd17B4aBF3b22482Bf0f09193f9902f1fd22'
-const OLD_AUC  = '0xfACc3eaD5EA9Ec5F2fe56568918b21Fb3b899284'
-const APOSTLE  = '0xbBce394d561E67bA9C0720d3aD56b25bC12Ee4f0'
-const DRILL    = '0x782827AdA353d4f958964e1E10D5d940e4B38409'
-const LAND     = '0x889DCe5b3934D56f3814f93793F8e1f8710249ea'
+const NFT_AUC = '0xe489Fd17B4aBF3b22482Bf0f09193f9902f1fd22'
+const OLD_AUC = '0xfACc3eaD5EA9Ec5F2fe56568918b21Fb3b899284'
+const APOSTLE = '0xbBce394d561E67bA9C0720d3aD56b25bC12Ee4f0'
+const DRILL   = '0x782827AdA353d4f958964e1E10D5d940e4B38409'
+const LAND    = '0x889DCe5b3934D56f3814f93793F8e1f8710249ea'
 
-// 拍卖时长最长30天，但大部分3天内成交
-// 扫7天确保覆盖所有活跃拍卖（7天 × 28800块/天 = 201600块，仍只需5个chunk）
-const SCAN_BLOCKS = 201600n  // ~7天
-const CHUNK = 45000n
+const NFT_AUC_ABI = [{
+  type: 'function', name: 'getAuction',
+  inputs: [{ name: 'nft', type: 'address' }, { name: 'id', type: 'uint256' }],
+  outputs: [{ components: [
+    { name: 'nftContract', type: 'address' },
+    { name: 'seller',      type: 'address' },
+    { name: 'startPrice',  type: 'uint128' },
+    { name: 'endPrice',    type: 'uint128' },
+    { name: 'duration',    type: 'uint64'  },
+    { name: 'startedAt',   type: 'uint64'  },
+  ], type: 'tuple' }],
+  stateMutability: 'view'
+}]
 
-const E_NFT_CREATED   = parseAbiItem('event AuctionCreated(address indexed nft,uint256 indexed id,address seller,uint128 start,uint128 end,uint64 dur)')
-const E_NFT_WON       = parseAbiItem('event AuctionWon(address indexed nft,uint256 indexed id,address buyer,uint256 price)')
-const E_NFT_CANCELLED = parseAbiItem('event AuctionCancelled(address indexed nft,uint256 indexed id)')
-const E_OLD_CREATED   = parseAbiItem('event AuctionCreated(uint256 indexed id,address seller,uint128 start,uint128 end,uint64 duration)')
-const E_OLD_WON       = parseAbiItem('event AuctionWon(uint256 indexed id,address buyer,uint256 price)')
-const E_OLD_CANCELLED = parseAbiItem('event AuctionCancelled(uint256 indexed id)')
+const OLD_AUC_ABI = [{
+  type: 'function', name: 'auctions',
+  inputs: [{ name: 'id', type: 'uint256' }],
+  outputs: [
+    { name: 'seller',     type: 'address' },
+    { name: 'startPrice', type: 'uint128' },
+    { name: 'endPrice',   type: 'uint128' },
+    { name: 'duration',   type: 'uint64'  },
+    { name: 'startedAt',  type: 'uint64'  },
+  ],
+  stateMutability: 'view'
+}]
 
-async function getLogsChunked(address, event, fromBlock, toBlock) {
-  const logs = []
-  for (let from = fromBlock; from <= toBlock; from += CHUNK) {
-    const to = from + CHUNK - 1n > toBlock ? toBlock : from + CHUNK - 1n
-    try {
-      const chunk = await pc.getLogs({ address, event, fromBlock: from, toBlock: to })
-      logs.push(...chunk)
-    } catch(e) {
-      console.error(`getLogs ${from}-${to}: ${e.message?.slice(0,60)}`)
-    }
-  }
-  return logs
-}
+const NEXT_ABI = [{ type: 'function', name: 'nextId', inputs: [], outputs: [{ type: 'uint256' }], stateMutability: 'view' }]
 
-// 内存缓存（Serverless 实例存活期间有效）
-let cache = null
-let cacheTime = 0
-const TTL = 3 * 60 * 1000  // 3分钟（短一点，让数据更新更及时）
+// 已知土地范围（x=0-99, y=0-99 但只铸造了部分）
+const LAND_IDS = []
+for (let x = 0; x < 100; x++) for (let y = 0; y < 100; y++) LAND_IDS.push(x * 100 + y + 1)
+
+let cache = null, cacheTime = 0
+const TTL = 3 * 60 * 1000  // 3分钟
 
 async function fetchListings() {
   const now = Date.now()
   if (cache && now - cacheTime < TTL) return cache
 
-  const latest = await pc.getBlockNumber()
-  // 只扫最近7天，不从创世块扫
-  const DEPLOY_BLOCK = 97519000n
-  const fromBlock = latest > SCAN_BLOCKS ? latest - SCAN_BLOCKS : DEPLOY_BLOCK
-  const actualFrom = fromBlock < DEPLOY_BLOCK ? DEPLOY_BLOCK : fromBlock
-
-  const chunks = Math.ceil(Number(latest - actualFrom) / Number(CHUNK))
-  console.log(`Scanning last ${Number(latest - actualFrom)} blocks (${chunks} chunks)`)
-
-  const [nftCreated, nftWon, nftCancelled, oldCreated, oldWon, oldCancelled] = await Promise.all([
-    getLogsChunked(NFT_AUC, E_NFT_CREATED,   actualFrom, latest),
-    getLogsChunked(NFT_AUC, E_NFT_WON,       actualFrom, latest),
-    getLogsChunked(NFT_AUC, E_NFT_CANCELLED, actualFrom, latest),
-    getLogsChunked(OLD_AUC, E_OLD_CREATED,   actualFrom, latest),
-    getLogsChunked(OLD_AUC, E_OLD_WON,       actualFrom, latest),
-    getLogsChunked(OLD_AUC, E_OLD_CANCELLED, actualFrom, latest),
+  // 获取使徒和钻头的总数
+  const [apoNext, drlNext] = await Promise.all([
+    pc.readContract({ address: APOSTLE, abi: NEXT_ABI, functionName: 'nextId' }).catch(() => 1n),
+    pc.readContract({ address: DRILL,   abi: NEXT_ABI, functionName: 'nextId' }).catch(() => 1n),
   ])
+  const apoIds = Array.from({ length: Number(apoNext) - 1 }, (_, i) => i + 1)
+  const drlIds = Array.from({ length: Number(drlNext) - 1 }, (_, i) => i + 1)
 
-  // NFTAuction 活跃挂单
-  const nftSold = new Set(nftWon.map(e => e.args.nft?.toLowerCase() + '_' + String(e.args.id)))
-  const nftCxd  = new Set(nftCancelled.map(e => e.args.nft?.toLowerCase() + '_' + String(e.args.id)))
-  const nftActive = nftCreated.filter(e => {
-    const k = e.args.nft?.toLowerCase() + '_' + String(e.args.id)
-    return !nftSold.has(k) && !nftCxd.has(k)
-  })
+  console.log(`Scanning: ${apoIds.length} apostles, ${drlIds.length} drills, ${LAND_IDS.length} land slots`)
 
-  // 旧合约活跃挂单
-  const oldSold = new Set(oldWon.map(e => String(e.args.id)))
-  const oldCxd2 = new Set(oldCancelled.map(e => String(e.args.id)))
-  const oldActive = oldCreated.filter(e => !oldSold.has(String(e.args.id)) && !oldCxd2.has(String(e.args.id)))
+  const BATCH = 200
+  const apostleIds = [], drillIds = [], landIds = [], oldLandIds = []
 
-  const result = {
-    apostleIds: nftActive.filter(e => e.args.nft?.toLowerCase() === APOSTLE.toLowerCase()).map(e => Number(e.args.id)),
-    drillIds:   nftActive.filter(e => e.args.nft?.toLowerCase() === DRILL.toLowerCase()).map(e => Number(e.args.id)),
-    landIds:    nftActive.filter(e => e.args.nft?.toLowerCase() === LAND.toLowerCase()).map(e => Number(e.args.id)),
-    oldLandIds: oldActive.map(e => Number(e.args.id)),
-    scannedAt:  now,
-    fromBlock:  Number(actualFrom),
-    toBlock:    Number(latest),
+  // 扫使徒
+  for (let s = 0; s < apoIds.length; s += BATCH) {
+    const batch = apoIds.slice(s, s + BATCH)
+    const res = await pc.multicall({
+      contracts: batch.map(id => ({ address: NFT_AUC, abi: NFT_AUC_ABI, functionName: 'getAuction', args: [APOSTLE, BigInt(id)] })),
+      allowFailure: true
+    })
+    batch.forEach((id, i) => {
+      const a = res[i]?.result
+      if (a && a.startedAt > 0n) apostleIds.push(id)
+    })
   }
 
-  console.log(`Active: apostles=${result.apostleIds.length} drills=${result.drillIds.length} lands=${result.landIds.length + result.oldLandIds.length}`)
+  // 扫钻头
+  for (let s = 0; s < drlIds.length; s += BATCH) {
+    const batch = drlIds.slice(s, s + BATCH)
+    const res = await pc.multicall({
+      contracts: batch.map(id => ({ address: NFT_AUC, abi: NFT_AUC_ABI, functionName: 'getAuction', args: [DRILL, BigInt(id)] })),
+      allowFailure: true
+    })
+    batch.forEach((id, i) => {
+      const a = res[i]?.result
+      if (a && a.startedAt > 0n) drillIds.push(id)
+    })
+  }
+
+  // 扫土地（新合约）
+  for (let s = 0; s < LAND_IDS.length; s += BATCH) {
+    const batch = LAND_IDS.slice(s, s + BATCH)
+    const res = await pc.multicall({
+      contracts: batch.map(id => ({ address: NFT_AUC, abi: NFT_AUC_ABI, functionName: 'getAuction', args: [LAND, BigInt(id)] })),
+      allowFailure: true
+    })
+    batch.forEach((id, i) => {
+      const a = res[i]?.result
+      if (a && a.startedAt > 0n) landIds.push(id)
+    })
+  }
+
+  // 扫土地（旧合约）
+  for (let s = 0; s < LAND_IDS.length; s += BATCH) {
+    const batch = LAND_IDS.slice(s, s + BATCH)
+    const res = await pc.multicall({
+      contracts: batch.map(id => ({ address: OLD_AUC, abi: OLD_AUC_ABI, functionName: 'auctions', args: [BigInt(id)] })),
+      allowFailure: true
+    })
+    batch.forEach((id, i) => {
+      const a = res[i]?.result
+      // 旧合约 auctions 返回 [seller, startPrice, endPrice, duration, startedAt]
+      const startedAt = Array.isArray(a) ? a[4] : a?.startedAt
+      if (startedAt > 0n) oldLandIds.push(id)
+    })
+  }
+
+  const result = { apostleIds, drillIds, landIds, oldLandIds, scannedAt: now }
+  console.log(`Active: apostles=${apostleIds.length} drills=${drillIds.length} lands=${landIds.length + oldLandIds.length}`)
 
   cache = result
   cacheTime = now
@@ -102,7 +129,6 @@ async function fetchListings() {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
-  // CDN 缓存3分钟，过期后最多等60秒的 stale 响应
   res.setHeader('Cache-Control', 's-maxage=180, stale-while-revalidate=60')
   if (req.method === 'OPTIONS') { res.status(200).end(); return }
   if (req.method !== 'GET') { res.status(405).json({ error: 'Method not allowed' }); return }
