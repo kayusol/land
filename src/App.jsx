@@ -14,6 +14,7 @@ import UpgradePage from './pages/UpgradePage.jsx'
 import RentalPage from './pages/RentalPage.jsx'
 import Toast from './components/Toast.jsx'
 import { ToastProvider } from './contexts/ToastContext.jsx'
+import { LangProvider } from './contexts/LangContext.jsx'
 import { useAccount } from './contexts/WalletContext.jsx'
 import { DEPLOYER } from './constants/contracts'
 import './App.css'
@@ -86,8 +87,10 @@ function AppInner() {
 
 export default function App() {
   return (
-    <ToastProvider>
-      <AppInner />
-    </ToastProvider>
+    <LangProvider>
+      <ToastProvider>
+        <AppInner />
+      </ToastProvider>
+    </LangProvider>
   )
 }
