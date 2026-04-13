@@ -244,26 +244,26 @@ function TokenTab({pc, address, wc}){
   ]
   const loadBals=useCallback(()=>{
     if(!address||!pc){setLoading(false);return}
-    pc.multicall({contracts:tokens.map(t=>({address:t.addr,abi:ERC20_ABI,functionName:'balanceOf',args:[address]})),allowFailure:true})
-      .then(res=>{const b={};tokens.forEach((t,i)=>{b[t.sym]=res[i]?.result??0n});setBals(b)}).finally(()=>setLoading(false))
+    pc.multicall({contracts:tokens.map(tk=>({address:tk.addr,abi:ERC20_ABI,functionName:'balanceOf',args:[address]})),allowFailure:true})
+      .then(res=>{const b={};tokens.forEach((tk,i)=>{b[tk.sym]=res[i]?.result??0n});setBals(b)}).finally(()=>setLoading(false))
   },[address,pc])
   useEffect(()=>{loadBals()},[loadBals])
   if(!address)return <div className="as-empty">{t('请先连接钱包','Please connect wallet')}</div>
   if(loading)return <div className="as-loading"><span className="as-spin"/>{t('加载中...','Loading...')}</div>
-  const cur=transferModal?tokens.find(t=>t.sym===transferModal):null
+  const cur=transferModal?tokens.find(tk=>tk.sym===transferModal):null
   return(
     <div>
       <div className="as-token-grid">
-        {tokens.map(t=>(
-          <div key={t.sym} className="as-token-card">
-            <img src={t.icon} alt={t.sym} style={{width:36,height:36}}/>
-            <div className="as-token-sym" style={{color:t.color}}>{t.sym}</div>
-            <div className="as-token-bal">{fmtR(bals[t.sym]||0n)}</div>
+        {tokens.map(tk=>(
+          <div key={tk.sym} className="as-token-card">
+            <img src={tk.icon} alt={tk.sym} style={{width:36,height:36}}/>
+            <div className="as-token-sym" style={{color:tk.color}}>{tk.sym}</div>
+            <div className="as-token-bal">{fmtR(bals[tk.sym]||0n)}</div>
             <button
               className="as-btn-sm as-btn-secondary"
               style={{marginTop:6,fontSize:'.7rem',padding:'3px 10px'}}
-              onClick={()=>setTransferModal(t.sym)}
-              disabled={!wc||(bals[t.sym]||0n)===0n}
+              onClick={()=>setTransferModal(tk.sym)}
+              disabled={!wc||(bals[tk.sym]||0n)===0n}
             >📤 {t('转账','Transfer')}</button>
           </div>
         ))}
@@ -271,7 +271,7 @@ function TokenTab({pc, address, wc}){
       {transferModal&&cur&&(
         <TransferModal
           type="erc20"
-          title={`${cur.sym} 代币`}
+          title={`${cur.sym} ${t('代币','Token')}`}
           tokenContract={cur.addr}
           symbol={cur.sym}
           balance={bals[cur.sym]||0n}
