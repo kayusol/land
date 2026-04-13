@@ -44,10 +44,18 @@ export default function TopNav({ pages, current, onChange }) {
   return (
     <nav className="top-nav">
       <div className="nav-logo">
-        <div className="nav-logo-icon">🌐</div>
+        <img
+          src="/logo.jpg"
+          alt="Columbus Land Logo"
+          className="nav-logo-img"
+        />
         <div className="nav-logo-text">
-          <span className="nav-logo-main">哥伦布大陆</span>
-          <span className="nav-logo-sub">COLUMBUS LAND</span>
+          <span className="nav-logo-main">
+            {lang === 'zh' ? '哥伦布大陆' : 'Columbus Land'}
+          </span>
+          <span className="nav-logo-sub">
+            {lang === 'zh' ? 'COLUMBUS LAND' : '哥伦布大陆'}
+          </span>
         </div>
       </div>
       <div className="nav-links">
